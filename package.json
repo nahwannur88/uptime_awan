@@ -1,0 +1,35 @@
+{
+  "name": "uptime-awan-dashboard",
+  "version": "1.0.0",
+  "description": "Uptime monitoring dashboard with speed test for Raspberry Pi 4",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon server/index.js",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "install-all": "npm install && cd client && npm install"
+  },
+  "keywords": ["uptime", "monitoring", "speedtest", "dashboard", "raspberry-pi"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2",
+    "sqlite3": "^5.1.6",
+    "axios": "^1.6.2",
+    "node-cron": "^3.0.3",
+    "speedtest-net": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "nodemailer": "^6.9.7",
+    "chart.js-node-canvas": "^4.1.6",
+    "canvas": "^2.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "concurrently": "^8.2.2"
+  }
+}
+

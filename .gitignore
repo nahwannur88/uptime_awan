@@ -1,0 +1,11 @@
+node_modules/
+.env
+data/*.db
+data/*.db-journal
+*.log
+client/build
+client/node_modules
+.DS_Store
+*.swp
+*.swo
+

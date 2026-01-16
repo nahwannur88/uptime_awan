@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+client/node_modules
+client/build
+data
+.git
+.gitignore
+.env
+*.md
+.DS_Store
+*.log
+backups
+
