@@ -1,5 +1,10 @@
 const nodemailer = require('nodemailer');
-const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+let ChartJSNodeCanvas = null;
+try {
+  ChartJSNodeCanvas = require('chartjs-node-canvas');
+} catch (error) {
+  console.warn('chartjs-node-canvas not available - email charts will be disabled');
+}
 const { getDatabase } = require('../database');
 const { getMonitors } = require('./monitoring');
 const { getSpeedTestHistory } = require('./speedtest');
@@ -46,11 +51,23 @@ async function initializeEmail() {
 function getEmailSettings() {
   return new Promise((resolve, reject) => {
     const db = getDatabase();
+    if (!db) {
+      resolve(null);
+      return;
+    }
     db.get(
       `SELECT * FROM email_settings ORDER BY id DESC LIMIT 1`,
       (err, row) => {
-        if (err) reject(err);
-        else resolve(row || null);
+        if (err) {
+          // If table doesn't exist, return null (not configured)
+          if (err.code === 'SQLITE_ERROR' && err.message.includes('no such table')) {
+            resolve(null);
+          } else {
+            reject(err);
+          }
+        } else {
+          resolve(row || null);
+        }
       }
     );
   });
@@ -128,6 +145,10 @@ function saveEmailSettings(settings) {
 // Generate hourly uptime chart
 async function generateHourlyUptimeChart(monitorId, monitorName) {
   return new Promise(async (resolve, reject) => {
+    if (!ChartJSNodeCanvas) {
+      reject(new Error('Chart generation not available - canvas module not installed'));
+      return;
+    }
     try {
       const db = getDatabase();
       
@@ -360,8 +381,14 @@ async function generateDailyReport() {
 
     // Add monitor details with charts
     for (const monitor of activeMonitors) {
-      const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name);
-      const chartBase64 = chartBuffer.toString('base64');
+      let chartBase64 = null;
+      try {
+        const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name);
+        chartBase64 = chartBuffer.toString('base64');
+      } catch (error) {
+        console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
+        // Continue without chart
+      }
 
       // Get monitor-specific stats
       const monitorStats = await new Promise((resolve, reject) => {
@@ -411,9 +438,21 @@ async function generateDailyReport() {
               </div>
             </div>
 
+            ${chartBase64 ? `
+            ${chartBase64 ? `
             <div class="chart-container">
               <img src="data:image/png;base64,${chartBase64}" alt="Hourly Uptime Chart" />
             </div>
+            ` : `
+            <div class="chart-container">
+              <p style="color: #666; text-align: center; padding: 20px;">Chart generation not available (canvas module not installed)</p>
+            </div>
+            `}
+            ` : `
+            <div class="chart-container">
+              <p style="color: #666; text-align: center; padding: 20px;">Chart generation not available (canvas module not installed)</p>
+            </div>
+            `}
           </div>
         </div>
       `;
@@ -627,13 +666,42 @@ function startDailyReportScheduler() {
 // Send test email
 async function sendTestEmail() {
   try {
-    if (!transporter || !emailSettings) {
-      throw new Error('Email not configured');
+    // Get latest settings
+    const settings = await getEmailSettings();
+    
+    if (!settings || !settings.enabled) {
+      return { success: false, message: 'Email reporting is not enabled. Please enable it first.' };
+    }
+
+    if (!settings.smtp_host || !settings.smtp_user || !settings.recipient_email) {
+      return { success: false, message: 'Email settings are incomplete. Please fill in all required fields (SMTP Host, SMTP User, Recipient Email).' };
+    }
+
+    if (!settings.smtp_password) {
+      return { success: false, message: 'SMTP password is required. Please enter your SMTP password.' };
+    }
+
+    // Create transporter for test
+    const testTransporter = nodemailer.createTransport({
+      host: settings.smtp_host,
+      port: settings.smtp_port || 587,
+      secure: settings.smtp_secure === 1,
+      auth: {
+        user: settings.smtp_user,
+        pass: settings.smtp_password
+      }
+    });
+
+    // Verify connection first
+    try {
+      await testTransporter.verify();
+    } catch (verifyError) {
+      return { success: false, message: `SMTP connection failed: ${verifyError.message}. Please check your SMTP settings.` };
     }
 
     const mailOptions = {
-      from: `"${emailSettings.from_name}" <${emailSettings.from_email}>`,
-      to: emailSettings.recipient_email,
+      from: `"${settings.from_name || 'Uptime Awan'}" <${settings.from_email}>`,
+      to: settings.recipient_email,
       subject: 'Test Email from Uptime Awan',
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -645,10 +713,14 @@ async function sendTestEmail() {
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    return { success: true, message: 'Test email sent successfully' };
+    await testTransporter.sendMail(mailOptions);
+    
+    // Reinitialize the main transporter with these settings
+    await initializeEmail();
+    
+    return { success: true, message: 'Test email sent successfully! Check your inbox.' };
   } catch (error) {
-    return { success: false, message: error.message };
+    return { success: false, message: `Failed to send test email: ${error.message}` };
   }
 }
 

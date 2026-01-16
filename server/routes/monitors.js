@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getMonitors,
   addMonitor,
+  updateMonitor,
   deleteMonitor,
   getMonitorHistory,
   checkMonitor
@@ -22,6 +23,16 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const monitor = await addMonitor(req.body);
+    res.json({ success: true, data: monitor });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update monitor
+router.put('/:id', async (req, res) => {
+  try {
+    const monitor = await updateMonitor(req.params.id, req.body);
     res.json({ success: true, data: monitor });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

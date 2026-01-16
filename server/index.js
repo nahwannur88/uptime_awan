@@ -23,8 +23,17 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Initialize database
-initDatabase();
+// Initialize database (async)
+let dbInitialized = false;
+initDatabase()
+  .then(() => {
+    dbInitialized = true;
+    console.log('Database ready');
+  })
+  .catch((err) => {
+    console.error('Database initialization failed:', err);
+    process.exit(1);
+  });
 
 // WebSocket connection handling
 const clients = new Set();
@@ -76,8 +85,17 @@ server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`WebSocket server ready`);
   
+  // Wait for database to be ready
+  while (!dbInitialized) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
   // Initialize email service
-  await initializeEmail();
+  try {
+    await initializeEmail();
+  } catch (error) {
+    console.error('Email service initialization error (non-fatal):', error.message);
+  }
   
   // Start scheduled services
   startSpeedTestScheduler();

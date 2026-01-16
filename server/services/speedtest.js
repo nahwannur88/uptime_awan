@@ -78,11 +78,20 @@ function getSpeedTestHistory(limit = 100) {
   return new Promise((resolve, reject) => {
     const db = getDatabase();
     db.all(
-      `SELECT * FROM speedtest_results ORDER BY timestamp DESC LIMIT ?`,
+      `SELECT *, datetime(timestamp, 'localtime') as local_timestamp 
+       FROM speedtest_results 
+       ORDER BY timestamp DESC LIMIT ?`,
       [limit],
       (err, rows) => {
         if (err) reject(err);
-        else resolve(rows);
+        else {
+          // Ensure timestamps are properly formatted
+          const formattedRows = rows.map(row => ({
+            ...row,
+            timestamp: row.local_timestamp || row.timestamp
+          }));
+          resolve(formattedRows);
+        }
       }
     );
   });
@@ -92,10 +101,17 @@ function getLatestSpeedTest() {
   return new Promise((resolve, reject) => {
     const db = getDatabase();
     db.get(
-      `SELECT * FROM speedtest_results ORDER BY timestamp DESC LIMIT 1`,
+      `SELECT *, datetime(timestamp, 'localtime') as local_timestamp 
+       FROM speedtest_results 
+       ORDER BY timestamp DESC LIMIT 1`,
       (err, row) => {
         if (err) reject(err);
-        else resolve(row);
+        else {
+          if (row) {
+            row.timestamp = row.local_timestamp || row.timestamp;
+          }
+          resolve(row);
+        }
       }
     );
   });

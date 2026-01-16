@@ -17,21 +17,39 @@ function SpeedTestCard({ data, history, onRunTest }) {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      // Convert to local time and format
+      return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return '';
+    }
   };
 
-  const chartData = history.slice(0, 12).reverse().map(item => ({
-    time: formatDate(item.timestamp),
-    download: parseFloat(item.download_speed.toFixed(2)),
-    upload: parseFloat(item.upload_speed.toFixed(2)),
-    ping: parseFloat(item.ping.toFixed(2))
-  }));
+  // Process chart data - ensure proper timezone and chronological order
+  const chartData = history
+    .slice(0, 12)
+    .map(item => {
+      const date = new Date(item.timestamp);
+      return {
+        time: formatDate(item.timestamp),
+        download: parseFloat((item.download_speed || 0).toFixed(2)),
+        upload: parseFloat((item.upload_speed || 0).toFixed(2)),
+        ping: parseFloat((item.ping || 0).toFixed(2)),
+        fullDate: date.getTime()
+      };
+    })
+    .sort((a, b) => a.fullDate - b.fullDate); // Sort chronologically (oldest to newest)
 
   return (
     <div className="speed-test-card">
       <div className="card-header">
-        <h2>Network Speed Test</h2>
+        <h2>Internet Speed test</h2>
         <button 
           className="run-test-btn" 
           onClick={handleRunTest}
@@ -39,12 +57,12 @@ function SpeedTestCard({ data, history, onRunTest }) {
         >
           {isRunning ? (
             <>
-              <Loader size={16} className="spinning" />
+              <Loader size={14} className="spinning" />
               Running...
-            </>
+            </> 
           ) : (
             <>
-              <Play size={16} />
+              <Play size={14} />
               Run Test
             </>
           )}
@@ -56,7 +74,7 @@ function SpeedTestCard({ data, history, onRunTest }) {
           <div className="speed-metrics">
             <div className="speed-metric">
               <div className="metric-icon download">
-                <ArrowDown size={20} />
+                <ArrowDown size={18} />
               </div>
               <div className="metric-info">
                 <div className="metric-label">Download</div>
@@ -66,7 +84,7 @@ function SpeedTestCard({ data, history, onRunTest }) {
 
             <div className="speed-metric">
               <div className="metric-icon upload">
-                <ArrowUp size={20} />
+                <ArrowUp size={18} />
               </div>
               <div className="metric-info">
                 <div className="metric-label">Upload</div>
@@ -76,7 +94,7 @@ function SpeedTestCard({ data, history, onRunTest }) {
 
             <div className="speed-metric">
               <div className="metric-icon ping">
-                <Zap size={20} />
+                <Zap size={18} />
               </div>
               <div className="metric-info">
                 <div className="metric-label">Ping</div>
@@ -108,8 +126,9 @@ function SpeedTestCard({ data, history, onRunTest }) {
 
       {chartData.length > 0 && (
         <div className="speed-chart">
-          <h3>Speed History (Last 12 Tests)</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <h3>Speed History</h3>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="time" stroke="#94a3b8" />
@@ -139,6 +158,7 @@ function SpeedTestCard({ data, history, onRunTest }) {
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
       )}
     </div>

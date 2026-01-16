@@ -1,6 +1,10 @@
 .App {
   min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  overflow: hidden;
 }
 
 .app-header {
@@ -47,6 +51,38 @@
   color: #94a3b8;
 }
 
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
 .header-icon-btn {
   background: transparent;
   border: none;
@@ -69,6 +105,11 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-grid {
@@ -76,11 +117,19 @@
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-top: 2rem;
+  flex: 1;
+  min-height: 0;
+  align-items: start;
 }
 
 @media (max-width: 1024px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .monitors-list-card,
+  .speed-test-card {
+    max-height: calc(100vh - 250px);
   }
 }
 
@@ -95,6 +144,15 @@
 
   .app-main {
     padding: 1rem;
+  }
+  
+  .monitors-list-card,
+  .speed-test-card {
+    max-height: calc(100vh - 200px);
+  }
+  
+  .dashboard-grid {
+    gap: 1rem;
   }
 }
 

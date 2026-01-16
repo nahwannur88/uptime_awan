@@ -11,25 +11,31 @@
     "start": "node server/index.js",
     "install-all": "npm install && cd client && npm install"
   },
-  "keywords": ["uptime", "monitoring", "speedtest", "dashboard", "raspberry-pi"],
+  "keywords": [
+    "uptime",
+    "monitoring",
+    "speedtest",
+    "dashboard",
+    "raspberry-pi"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "ws": "^8.14.2",
-    "sqlite3": "^5.1.6",
     "axios": "^1.6.2",
-    "node-cron": "^3.0.3",
-    "speedtest-net": "^2.2.0",
+    "canvas": "^2.11.2",
+    "chartjs-node-canvas": "^4.1.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
     "nodemailer": "^6.9.7",
-    "chartjs-node-canvas": "^4.1.6",
-    "canvas": "^2.11.2"
+    "ping": "^0.4.4",
+    "speedtest-net": "^2.2.0",
+    "sqlite3": "^5.1.6",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
   }
 }
-

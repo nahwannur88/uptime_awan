@@ -6,7 +6,8 @@ import MonitorsList from './components/MonitorsList';
 import AddMonitorModal from './components/AddMonitorModal';
 import EmailSettings from './components/EmailSettings';
 import EmailStatusIndicator from './components/EmailStatusIndicator';
-import { Activity, Wifi, Mail } from 'lucide-react';
+import SpeedtestSettings from './components/SpeedtestSettings';
+import { Activity, Wifi, Mail, Settings } from 'lucide-react';
 
 function App() {
   const [monitors, setMonitors] = useState([]);
@@ -14,6 +15,7 @@ function App() {
   const [speedTestHistory, setSpeedTestHistory] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
+  const [isSpeedtestSettingsOpen, setIsSpeedtestSettingsOpen] = useState(false);
   const [ws, setWs] = useState(null);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ function App() {
         setSpeedTestData(message.data);
         fetchSpeedTestHistory();
       } else if (message.type === 'monitor_check') {
+        // Update monitors immediately when check completes
         fetchMonitors();
       }
     };
@@ -49,10 +52,9 @@ function App() {
 
     websocket.onclose = () => {
       console.log('WebSocket disconnected');
-      // Attempt to reconnect after 5 seconds
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
+      // Don't auto-reload - just log the disconnection
+      // WebSocket will reconnect automatically on next interaction if needed
+      // This prevents interrupting user actions like configuring settings
     };
 
     setWs(websocket);
@@ -108,6 +110,8 @@ function App() {
     }
   };
 
+  const [editingMonitor, setEditingMonitor] = useState(null);
+
   const handleAddMonitor = async (monitorData) => {
     try {
       const response = await fetch('/api/monitors', {
@@ -126,6 +130,32 @@ function App() {
     } catch (error) {
       console.error('Error adding monitor:', error);
     }
+  };
+
+  const handleUpdateMonitor = async (id, monitorData) => {
+    try {
+      const response = await fetch(`/api/monitors/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(monitorData),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        fetchMonitors();
+        setIsModalOpen(false);
+        setEditingMonitor(null);
+      }
+    } catch (error) {
+      console.error('Error updating monitor:', error);
+    }
+  };
+
+  const handleEditMonitor = (monitor) => {
+    setEditingMonitor(monitor);
+    setIsModalOpen(true);
   };
 
   const handleDeleteMonitor = async (id) => {
@@ -163,12 +193,23 @@ function App() {
             <h1>Uptime Awan Dashboard</h1>
           </div>
           <div className="header-right">
+            <div className="live-indicator" title="Live Updates Active">
+              <div className="live-dot"></div>
+              <span>Live</span>
+            </div>
             <button 
               className="header-icon-btn" 
               onClick={() => setIsEmailSettingsOpen(true)}
               title="Email Settings"
             >
               <Mail size={24} />
+            </button>
+            <button 
+              className="header-icon-btn" 
+              onClick={() => setIsSpeedtestSettingsOpen(true)}
+              title="Speedtest Settings"
+            >
+              <Settings size={24} />
             </button>
             <Wifi size={24} />
           </div>
@@ -187,22 +228,37 @@ function App() {
           
           <MonitorsList
             monitors={monitors}
-            onAddMonitor={() => setIsModalOpen(true)}
+            onAddMonitor={() => {
+              setEditingMonitor(null);
+              setIsModalOpen(true);
+            }}
             onDeleteMonitor={handleDeleteMonitor}
+            onEditMonitor={handleEditMonitor}
           />
         </div>
       </main>
 
       {isModalOpen && (
         <AddMonitorModal
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingMonitor(null);
+          }}
           onAdd={handleAddMonitor}
+          onUpdate={handleUpdateMonitor}
+          monitor={editingMonitor}
         />
       )}
 
       {isEmailSettingsOpen && (
         <EmailSettings
           onClose={() => setIsEmailSettingsOpen(false)}
+        />
+      )}
+
+      {isSpeedtestSettingsOpen && (
+        <SpeedtestSettings
+          onClose={() => setIsSpeedtestSettingsOpen(false)}
         />
       )}
 

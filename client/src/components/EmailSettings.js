@@ -117,12 +117,47 @@ function EmailSettings({ onClose }) {
   };
 
   const handleTestEmail = async () => {
-    if (!validate()) {
+    // Validate required fields for test email
+    const testErrors = {};
+    
+    if (!settings.smtp_host) {
+      testErrors.smtp_host = 'SMTP host is required';
+    }
+    if (!settings.smtp_user) {
+      testErrors.smtp_user = 'SMTP user is required';
+    }
+    if (!settings.smtp_password && !settings.id) {
+      testErrors.smtp_password = 'SMTP password is required';
+    }
+    if (!settings.from_email) {
+      testErrors.from_email = 'From email is required';
+    }
+    if (!settings.recipient_email) {
+      testErrors.recipient_email = 'Recipient email is required';
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (settings.from_email && !emailRegex.test(settings.from_email)) {
+      testErrors.from_email = 'Invalid email format';
+    }
+    if (settings.recipient_email && !emailRegex.test(settings.recipient_email)) {
+      testErrors.recipient_email = 'Invalid email format';
+    }
+
+    if (Object.keys(testErrors).length > 0) {
+      setErrors(testErrors);
+      const missingFields = Object.keys(testErrors).join(', ').replace(/_/g, ' ');
+      setTestResult({ 
+        success: false, 
+        message: `Please configure the following fields: ${missingFields}` 
+      });
       return;
     }
 
     // Save settings first
     try {
+      setSaving(true);
       const saveResponse = await fetch('/api/email/settings', {
         method: 'POST',
         headers: {
@@ -133,12 +168,11 @@ function EmailSettings({ onClose }) {
 
       const saveData = await saveResponse.json();
       if (!saveData.success) {
-        setTestResult({ success: false, message: 'Failed to save settings before test' });
+        setTestResult({ success: false, message: saveData.error || 'Failed to save settings before test' });
         return;
       }
 
       // Send test email
-      setSaving(true);
       const testResponse = await fetch('/api/email/test', {
         method: 'POST',
       });
@@ -150,7 +184,7 @@ function EmailSettings({ onClose }) {
         setTestResult({ success: false, message: testData.error || 'Failed to send test email' });
       }
     } catch (error) {
-      setTestResult({ success: false, message: 'Error sending test email' });
+      setTestResult({ success: false, message: 'Error sending test email: ' + error.message });
     } finally {
       setSaving(false);
     }
