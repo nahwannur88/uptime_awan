@@ -24,7 +24,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "nodemailer": "^6.9.7",
-    "chart.js-node-canvas": "^4.1.6",
+    "chartjs-node-canvas": "^4.1.6",
     "canvas": "^2.11.2"
   },
   "devDependencies": {

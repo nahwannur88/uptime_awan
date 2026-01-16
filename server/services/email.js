@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const { ChartJSNodeCanvas } = require('chart.js-node-canvas');
+const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 const { getDatabase } = require('../database');
 const { getMonitors } = require('./monitoring');
 const { getSpeedTestHistory } = require('./speedtest');
