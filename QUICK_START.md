@@ -4,7 +4,29 @@ Get Uptime Awan Dashboard running in minutes!
 
 ## For Raspberry Pi 4
 
-### Option 1: Automatic Setup (Recommended)
+### Option 1: Install from Git (Recommended)
+
+```bash
+# Clone repository
+cd /home/pi
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git uptime-awan
+cd uptime-awan
+
+# Install dependencies
+npm install
+cd client && npm install && npm run build && cd ..
+
+# Configure
+cp .env.example .env
+nano .env  # Edit as needed
+mkdir -p data
+
+# Setup systemd service (see GIT_SETUP_RASPBERRY_PI.md for details)
+```
+
+See [GIT_SETUP_RASPBERRY_PI.md](./GIT_SETUP_RASPBERRY_PI.md) for complete guide.
+
+### Option 2: Automatic Setup Script
 
 ```bash
 # Transfer files to Raspberry Pi
@@ -22,6 +44,9 @@ sudo ./scripts/setup-raspberry-pi.sh
 The script will install everything and start the service automatically!
 
 **Access your dashboard at**: `http://[raspberry-pi-ip]:3001`
+
+**Access from other computers**: Use the same URL from any device on your network!
+See [NETWORK_ACCESS.md](./NETWORK_ACCESS.md) for details.
 
 ### Option 2: Manual Setup
 

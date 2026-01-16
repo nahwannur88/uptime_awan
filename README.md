@@ -31,6 +31,16 @@ A comprehensive network monitoring dashboard with integrated speed testing, desi
 - Node.js 16+ and npm
 - Internet connection
 
+## Access from Other Devices
+
+**Yes!** You can access the dashboard from any computer, phone, or tablet on the same network.
+
+Simply use: `http://[raspberry-pi-ip]:3001`
+
+Find your Pi's IP: `hostname -I` (on Raspberry Pi)
+
+See [NETWORK_ACCESS.md](./NETWORK_ACCESS.md) for detailed instructions.
+
 ## Quick Start
 
 ### 1. Clone the Repository
@@ -94,14 +104,27 @@ NODE_ENV=production npm start
 
 ## Raspberry Pi Deployment
 
-### Automatic Setup Script
+### Option 1: Install from Git (Recommended)
+
+```bash
+# Clone repository
+cd /home/pi
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git uptime-awan
+cd uptime-awan
+
+# Follow the setup guide
+```
+
+See [GIT_SETUP_RASPBERRY_PI.md](./GIT_SETUP_RASPBERRY_PI.md) for complete step-by-step instructions.
+
+### Option 2: Automatic Setup Script
 
 ```bash
 chmod +x scripts/setup-raspberry-pi.sh
 sudo ./scripts/setup-raspberry-pi.sh
 ```
 
-### Manual Setup
+### Option 3: Manual Setup
 
 See [RASPBERRY_PI_SETUP.md](./RASPBERRY_PI_SETUP.md) for detailed instructions.
 
