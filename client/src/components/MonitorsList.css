@@ -253,8 +253,8 @@
 
 .monitor-item.status-unknown .monitor-card-front,
 .monitor-item.status-unknown .monitor-card-back {
-  border-left: none;
-  background: transparent;
+  border-left-color: #94a3b8;
+  background: rgba(15, 23, 42, 0.6);
 }
 
 .monitor-actions-static {
