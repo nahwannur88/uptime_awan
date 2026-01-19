@@ -363,28 +363,6 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
       const targetDateEnd = new Date(targetDate);
       targetDateEnd.setHours(23, 59, 59, 999);
       
-      // First check if there's any data at all
-      const dataCheck = await new Promise((resolve, reject) => {
-        db.get(
-          `SELECT COUNT(*) as count
-           FROM monitor_checks
-           WHERE monitor_id = ? AND timestamp >= ? AND timestamp <= ?`,
-          [monitorId, targetDate.toISOString(), targetDateEnd.toISOString()],
-          (err, row) => {
-            if (err) reject(err);
-            else resolve(row);
-          }
-        );
-      });
-
-      if (!dataCheck || dataCheck.count === 0) {
-        console.log(`No data found for monitor ${monitorId} on ${reportDate || 'yesterday'}`);
-        resolve(null);
-        return;
-      }
-
-      console.log(`Found ${dataCheck.count} checks for monitor ${monitorId} on ${reportDate || 'yesterday'}`);
-      
       // Get all individual check records (not averaged) to show actual data points
       db.all(
         `SELECT 
@@ -401,14 +379,13 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             return;
           }
 
-          // Check if there's any data
-          if (!rows || rows.length === 0) {
-            // No data - return null to indicate blank chart
-            resolve(null);
-            return;
+          // Always generate chart, even if no data (will show empty chart)
+          const hasData = rows && rows.length > 0;
+          if (hasData) {
+            console.log(`Chart data for monitor ${monitorId}: ${rows.length} individual check records`);
+          } else {
+            console.log(`No data found for monitor ${monitorId} on ${reportDate || 'yesterday'}, generating empty chart`);
           }
-
-          console.log(`Chart data for monitor ${monitorId}: ${rows.length} individual check records`);
 
           // Create a map of all 24 hours for x-axis labels
           const hourLabels = [];
@@ -423,20 +400,22 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           const chartData = [];
           const dataByHour = {};
           
-          // Initialize all hours with null (no data)
+          // Initialize all hours with empty arrays (no data)
           for (let i = 0; i < 24; i++) {
             const hour = String(i).padStart(2, '0');
             dataByHour[hour] = [];
           }
           
-          // Group checks by hour
-          rows.forEach(row => {
-            const checkDate = new Date(row.timestamp);
-            const hour = String(checkDate.getHours()).padStart(2, '0');
-            if (row.response_time !== null && row.response_time !== undefined) {
-              dataByHour[hour].push(parseFloat(row.response_time));
-            }
-          });
+          // Group checks by hour (if we have data)
+          if (hasData && rows) {
+            rows.forEach(row => {
+              const checkDate = new Date(row.timestamp);
+              const hour = String(checkDate.getHours()).padStart(2, '0');
+              if (row.response_time !== null && row.response_time !== undefined) {
+                dataByHour[hour].push(parseFloat(row.response_time));
+              }
+            });
+          }
           
           // For each hour, use the actual values (if multiple checks, use the last one or average)
           // But to match the Excel-style chart, we'll use the last check value in each hour
@@ -708,21 +687,18 @@ async function generateDailyReport(reportDate = null) {
         );
       });
 
-      // Generate chart only if there's data (uses same date range)
+      // Always generate chart (even if no data, will show empty chart)
       let chartBase64 = null;
-      // Only try to generate chart if we have actual check data
-      if (monitorStats.total > 0) {
-        try {
-          const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name, reportDateStr);
-          if (chartBuffer) {
-            chartBase64 = chartBuffer.toString('base64');
-          } else {
-            console.warn(`Chart generation returned null for ${monitor.name} (but has ${monitorStats.total} checks)`);
-          }
-        } catch (error) {
-          console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
-          // Continue without chart
+      try {
+        const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name, reportDateStr);
+        if (chartBuffer) {
+          chartBase64 = chartBuffer.toString('base64');
+        } else {
+          console.warn(`Chart generation returned null for ${monitor.name}`);
         }
+      } catch (error) {
+        console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
+        // Continue without chart
       }
 
       const monitorUptime = monitorStats.total > 0
