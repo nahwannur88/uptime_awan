@@ -80,7 +80,7 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
         <div className="header-top">
           <h2>Monitors ({monitors.length})</h2>
           <button className="add-monitor-btn" onClick={onAddMonitor}>
-            <Plus size={16} />
+            <Plus size={14} />
             Add Monitor
           </button>
         </div>
