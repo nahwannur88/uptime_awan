@@ -145,7 +145,7 @@ function saveEmailSettings(settings) {
 }
 
 // Generate hourly uptime chart
-async function generateHourlyUptimeChart(monitorId, monitorName) {
+async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = null) {
   return new Promise(async (resolve, reject) => {
     if (!ChartJSNodeCanvas) {
       reject(new Error('Chart generation not available - canvas module not installed'));
@@ -154,13 +154,18 @@ async function generateHourlyUptimeChart(monitorId, monitorName) {
     try {
       const db = getDatabase();
       
-      // Get hourly data for yesterday (00:00 to 23:59)
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(0, 0, 0, 0);
+      // Get hourly data for target date (00:00 to 23:59)
+      let targetDate;
+      if (reportDate) {
+        targetDate = new Date(reportDate + 'T00:00:00');
+      } else {
+        targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - 1);
+        targetDate.setHours(0, 0, 0, 0);
+      }
       
-      const yesterdayEnd = new Date(yesterday);
-      yesterdayEnd.setHours(23, 59, 59, 999);
+      const targetDateEnd = new Date(targetDate);
+      targetDateEnd.setHours(23, 59, 59, 999);
       
       db.all(
         `SELECT 
@@ -172,7 +177,7 @@ async function generateHourlyUptimeChart(monitorId, monitorName) {
          WHERE monitor_id = ? AND timestamp >= ? AND timestamp <= ?
          GROUP BY strftime('%H', timestamp)
          ORDER BY hour`,
-        [monitorId, yesterday.toISOString(), yesterdayEnd.toISOString()],
+        [monitorId, targetDate.toISOString(), targetDateEnd.toISOString()],
         async (err, rows) => {
           if (err) {
             reject(err);
@@ -277,7 +282,7 @@ async function generateHourlyUptimeChart(monitorId, monitorName) {
 }
 
 // Generate daily report
-async function generateDailyReport() {
+async function generateDailyReport(reportDate = null) {
   try {
     if (!transporter || !emailSettings) {
       console.log('Email not configured, skipping report');
@@ -293,15 +298,22 @@ async function generateDailyReport() {
     }
 
     const db = getDatabase();
-    // Get yesterday's date range (00:00:00 to 23:59:59)
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
+    // Calculate report date (default to yesterday, or use provided date)
+    let targetDate;
+    if (reportDate) {
+      // Parse provided date (YYYY-MM-DD format)
+      targetDate = new Date(reportDate + 'T00:00:00');
+    } else {
+      // Default to yesterday
+      targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() - 1);
+      targetDate.setHours(0, 0, 0, 0);
+    }
     
-    const yesterdayEnd = new Date(yesterday);
-    yesterdayEnd.setHours(23, 59, 59, 999);
+    const targetDateEnd = new Date(targetDate);
+    targetDateEnd.setHours(23, 59, 59, 999);
     
-    const reportDate = yesterday.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const reportDateStr = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     // Get overall statistics
     const totalChecks = await new Promise((resolve, reject) => {
@@ -312,7 +324,7 @@ async function generateDailyReport() {
           AVG(response_time) as avg_response_time
          FROM monitor_checks
          WHERE timestamp >= ? AND timestamp <= ?`,
-        [yesterday.toISOString(), yesterdayEnd.toISOString()],
+        [targetDate.toISOString(), targetDateEnd.toISOString()],
         (err, row) => {
           if (err) reject(err);
           else resolve(row);
@@ -385,7 +397,7 @@ async function generateDailyReport() {
     for (const monitor of activeMonitors) {
       let chartBase64 = null;
       try {
-        const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name);
+        const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name, reportDateStr);
         chartBase64 = chartBuffer.toString('base64');
       } catch (error) {
         console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
@@ -403,7 +415,7 @@ async function generateDailyReport() {
             MIN(response_time) as min_response_time
            FROM monitor_checks
            WHERE monitor_id = ? AND timestamp >= ? AND timestamp <= ?`,
-          [monitor.id, yesterday.toISOString(), yesterdayEnd.toISOString()],
+          [monitor.id, targetDate.toISOString(), targetDateEnd.toISOString()],
           (err, row) => {
             if (err) reject(err);
             else resolve(row);
@@ -499,12 +511,12 @@ async function generateDailyReport() {
     const mailOptions = {
       from: `"${emailSettings.from_name}" <${emailSettings.from_email}>`,
       to: emailSettings.recipient_email,
-      subject: `Daily Uptime Report - ${reportDate}`,
+      subject: `Daily Uptime Report - ${reportDateStr}`,
       html: htmlReport
     };
 
     // Update status to sending
-    await updateEmailSendStatus(reportDate, 'sending', 0, null, null);
+    await updateEmailSendStatus(reportDateStr, 'sending', 0, null, null);
 
     // Retry logic - 3 attempts
     let lastError = null;
@@ -514,7 +526,7 @@ async function generateDailyReport() {
       try {
         await transporter.sendMail(mailOptions);
         success = true;
-        await updateEmailSendStatus(reportDate, 'sent', attempt, null, new Date().toISOString());
+        await updateEmailSendStatus(reportDateStr, 'sent', attempt, null, new Date().toISOString());
         console.log(`Daily report sent successfully on attempt ${attempt}`);
         
         // Broadcast status update
@@ -522,7 +534,7 @@ async function generateDailyReport() {
           global.broadcast({
             type: 'email_status',
             data: {
-              report_date: reportDate,
+              report_date: reportDateStr,
               status: 'sent',
               sent_at: new Date().toISOString()
             }
@@ -532,7 +544,7 @@ async function generateDailyReport() {
       } catch (error) {
         lastError = error;
         console.error(`Email send attempt ${attempt} failed:`, error.message);
-        await updateEmailSendStatus(reportDate, 'failed', attempt, error.message, null);
+        await updateEmailSendStatus(reportDateStr, 'failed', attempt, error.message, null);
         
         // Wait 5 seconds before retry (except on last attempt)
         if (attempt < 3) {
@@ -542,7 +554,7 @@ async function generateDailyReport() {
     }
 
     if (!success) {
-      await updateEmailSendStatus(reportDate, 'failed', 3, lastError.message, null);
+      await updateEmailSendStatus(reportDateStr, 'failed', 3, lastError.message, null);
       console.error('Daily report failed after 3 attempts:', lastError.message);
       
       // Broadcast status update
@@ -550,7 +562,7 @@ async function generateDailyReport() {
         global.broadcast({
           type: 'email_status',
           data: {
-            report_date: reportDate,
+            report_date: reportDateStr,
             status: 'failed',
             error: lastError.message,
             attempts: 3

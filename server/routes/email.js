@@ -54,7 +54,8 @@ router.post('/test', async (req, res) => {
 // Generate and send report on demand
 router.post('/report', async (req, res) => {
   try {
-    await generateDailyReport();
+    const reportDate = req.body.reportDate || null; // Optional date parameter (YYYY-MM-DD)
+    await generateDailyReport(reportDate);
     res.json({ success: true, message: 'Report sent successfully' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

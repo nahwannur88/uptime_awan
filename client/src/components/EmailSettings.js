@@ -15,6 +15,12 @@ function EmailSettings({ onClose }) {
     recipient_email: '',
     report_time: '08:00'
   });
+  const [reportDate, setReportDate] = useState(() => {
+    // Default to yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -121,11 +127,15 @@ function EmailSettings({ onClose }) {
       setSaving(true);
       const response = await fetch('/api/email/report', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reportDate }),
       });
 
       const data = await response.json();
       if (data.success) {
-        setTestResult({ success: true, message: 'Daily report sent successfully! Check your inbox.' });
+        setTestResult({ success: true, message: `Daily report for ${reportDate} sent successfully! Check your inbox.` });
       } else {
         setTestResult({ success: false, message: data.error || 'Failed to send report' });
       }
@@ -403,6 +413,21 @@ function EmailSettings({ onClose }) {
                       <li><strong>Custom:</strong> Check with your email provider</li>
                     </ul>
                   </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>Manual Report</h3>
+                <div className="form-group">
+                  <label htmlFor="report_date">Select Report Date</label>
+                  <input
+                    type="date"
+                    id="report_date"
+                    value={reportDate}
+                    onChange={(e) => setReportDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]} // Can't select future dates
+                  />
+                  <small>Select a date to generate and send a report for that day</small>
                 </div>
               </div>
             </>
