@@ -11,6 +11,14 @@
   max-height: calc(100vh - 300px);
 }
 
+@media (max-width: 768px) {
+  .monitors-list-card {
+    max-height: none;
+    height: auto;
+    min-height: 400px;
+  }
+}
+
 .card-header {
   flex-shrink: 0;
   margin-bottom: 0.5rem;

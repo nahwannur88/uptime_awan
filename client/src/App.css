@@ -7,6 +7,16 @@
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  .App {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .app-header {
   background: rgba(30, 41, 59, 0.8);
   backdrop-filter: blur(10px);
