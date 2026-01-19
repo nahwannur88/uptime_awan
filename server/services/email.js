@@ -446,14 +446,13 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
                   tension: 0.3,
                   fill: false,
                   spanGaps: false,
-                  pointRadius: 4,
+                  pointRadius: function(context) {
+                    return context.parsed.y === null ? 0 : 4;
+                  },
                   pointHoverRadius: 6,
                   pointBackgroundColor: 'rgb(59, 130, 246)',
                   pointBorderColor: '#fff',
-                  pointBorderWidth: 2,
-                  pointRadius: function(context) {
-                    return context.parsed.y === null ? 0 : 4;
-                  }
+                  pointBorderWidth: 2
                 }
               ]
             },
