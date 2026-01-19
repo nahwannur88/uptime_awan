@@ -159,6 +159,19 @@ function App() {
   };
 
   const handleDeleteMonitor = async (id) => {
+    // Find the monitor to get its name for the confirmation message
+    const monitor = monitors.find(m => m.id === id);
+    const monitorName = monitor ? monitor.name : 'this monitor';
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${monitorName}"?\n\nThis action cannot be undone.`
+    );
+    
+    if (!confirmed) {
+      return; // User cancelled, don't proceed
+    }
+    
     try {
       const response = await fetch(`/api/monitors/${id}`, {
         method: 'DELETE',
@@ -170,6 +183,7 @@ function App() {
       }
     } catch (error) {
       console.error('Error deleting monitor:', error);
+      alert('Failed to delete monitor. Please try again.');
     }
   };
 
