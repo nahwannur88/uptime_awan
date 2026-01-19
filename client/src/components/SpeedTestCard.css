@@ -32,8 +32,9 @@
 
 @media (orientation: landscape) and (max-width: 768px) {
   .speed-test-card {
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
+    max-height: none;
+    height: auto;
+    overflow-y: visible;
     padding: 0.5rem;
   }
 }

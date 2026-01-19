@@ -32,8 +32,9 @@
   
   .app-main {
     padding: 0.5rem;
+    /* Let the main area grow fully; scrolling happens on the page */
     overflow-y: visible;
-    max-height: calc(100vh - 100px);
+    max-height: none;
   }
   
   .dashboard-grid {
@@ -58,14 +59,13 @@
     height: 16px;
   }
   
-  .monitors-list-card {
-    max-height: calc(100vh - 280px);
-    overflow-y: auto;
-  }
-  
+  /* In landscape, allow these cards to take natural height.
+     The whole page scrolls instead of inner scroll areas. */
+  .monitors-list-card,
   .speed-test-card {
-    max-height: calc(100vh - 280px);
-    overflow-y: auto;
+    max-height: none;
+    height: auto;
+    overflow-y: visible;
   }
 }
 

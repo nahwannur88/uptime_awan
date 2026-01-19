@@ -28,8 +28,9 @@
 @media (orientation: landscape) and (max-width: 768px) {
   .monitors-list-card {
     min-height: 250px;
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
+    max-height: none;
+    height: auto;
+    overflow-y: visible;
   }
   
   .monitors-list {
