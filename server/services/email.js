@@ -571,10 +571,6 @@ async function generateDailyReport(reportDate = null) {
       ? ((totalChecks.up / totalChecks.total) * 100).toFixed(2)
       : '0.00';
 
-    // Get speed test data
-    const speedTests = await getSpeedTestHistory(24);
-    const latestSpeedTest = speedTests[0] || null;
-
     // Build HTML report
     let htmlReport = `
       <!DOCTYPE html>
