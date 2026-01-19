@@ -196,7 +196,10 @@
   
   .monitors-list-card,
   .speed-test-card {
-    max-height: calc(100vh - 250px);
+    /* For tablets (including iPad), let cards grow fully and use page scroll */
+    max-height: none;
+    height: auto;
+    overflow-y: visible;
   }
 }
 
