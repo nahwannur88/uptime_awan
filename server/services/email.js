@@ -1,9 +1,11 @@
 const nodemailer = require('nodemailer');
 let ChartJSNodeCanvas = null;
 try {
-  ChartJSNodeCanvas = require('chartjs-node-canvas');
+  // chartjs-node-canvas exports ChartJSNodeCanvas as a named export
+  const { ChartJSNodeCanvas: ChartJSNodeCanvasClass } = require('chartjs-node-canvas');
+  ChartJSNodeCanvas = ChartJSNodeCanvasClass;
 } catch (error) {
-  console.warn('chartjs-node-canvas not available - email charts will be disabled');
+  console.warn('chartjs-node-canvas not available - email charts will be disabled:', error.message);
 }
 const { getDatabase } = require('../database');
 const { getMonitors } = require('./monitoring');
