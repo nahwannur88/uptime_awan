@@ -352,44 +352,42 @@ function updateMonitorStatus(monitorId) {
 
 const monitorIntervals = new Map(); // Track intervals for each monitor
 
+// Helper function to schedule a monitor check
+function scheduleMonitorCheck(monitor) {
+  // Clear existing interval for this monitor
+  if (monitorIntervals.has(monitor.id)) {
+    clearInterval(monitorIntervals.get(monitor.id));
+    monitorIntervals.delete(monitor.id);
+  }
+  
+  const interval = monitor.interval || 60000; // Default: 1 minute
+  const intervalMs = parseInt(interval);
+  
+  // Check immediately
+  checkMonitor(monitor).catch(console.error);
+  
+  // Schedule recurring checks
+  const intervalId = setInterval(() => {
+    checkMonitor(monitor).catch(console.error);
+  }, intervalMs);
+  
+  monitorIntervals.set(monitor.id, intervalId);
+}
+
+// Helper function to reschedule a monitor (used when interval changes)
+function rescheduleMonitor(monitor) {
+  // Clear existing interval
+  if (monitorIntervals.has(monitor.id)) {
+    clearInterval(monitorIntervals.get(monitor.id));
+    monitorIntervals.delete(monitor.id);
+  }
+  
+  // Schedule with new interval
+  scheduleMonitorCheck(monitor);
+}
+
 async function startMonitoringService() {
   const db = getDatabase();
-  
-  function scheduleMonitorCheck(monitor) {
-    // Skip if already scheduled (unless we're updating)
-    if (monitorIntervals.has(monitor.id)) {
-      return;
-    }
-    
-    // Clear existing interval for this monitor (safety check)
-    if (monitorIntervals.has(monitor.id)) {
-      clearInterval(monitorIntervals.get(monitor.id));
-    }
-    
-    const interval = monitor.interval || 60000; // Default: 1 minute
-    const intervalMs = parseInt(interval);
-    
-    // Check immediately
-    checkMonitor(monitor).catch(console.error);
-    
-    // Schedule recurring checks
-    const intervalId = setInterval(() => {
-      checkMonitor(monitor).catch(console.error);
-    }, intervalMs);
-    
-    monitorIntervals.set(monitor.id, intervalId);
-  }
-  
-  function rescheduleMonitor(monitor) {
-    // Clear existing interval
-    if (monitorIntervals.has(monitor.id)) {
-      clearInterval(monitorIntervals.get(monitor.id));
-      monitorIntervals.delete(monitor.id);
-    }
-    
-    // Schedule with new interval
-    scheduleMonitorCheck(monitor);
-  }
   
   function refreshAllMonitors() {
     db.all(
