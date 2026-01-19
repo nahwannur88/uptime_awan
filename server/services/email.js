@@ -198,10 +198,20 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             };
           });
 
-          // Prepare chart data
-          const hours = Object.keys(hourlyData);
-          const uptimeValues = hours.map(h => hourlyData[h].uptime);
-          const responseTimeValues = hours.map(h => hourlyData[h].responseTime);
+          // Prepare chart data - only response time, all 24 hours (00:00 to 23:00)
+          const hours = [];
+          const responseTimeValues = [];
+          
+          // Generate all 24 hours from 00:00 to 23:00
+          for (let i = 0; i < 24; i++) {
+            const hour = String(i).padStart(2, '0');
+            hours.push(`${hour}:00`);
+            responseTimeValues.push(hourlyData[hour].responseTime || 0);
+          }
+          
+          // Add 24:00 at the end to show the full day
+          hours.push('24:00');
+          responseTimeValues.push(responseTimeValues[23]); // Use last hour's value
 
           // Create chart
           const width = 800;
@@ -211,36 +221,48 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           const configuration = {
             type: 'line',
             data: {
-              labels: hours.map(h => `${h}:00`),
+              labels: hours,
               datasets: [
-                {
-                  label: 'Uptime %',
-                  data: uptimeValues,
-                  borderColor: 'rgb(34, 197, 94)',
-                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                  tension: 0.4,
-                  yAxisID: 'y'
-                },
                 {
                   label: 'Response Time (ms)',
                   data: responseTimeValues,
                   borderColor: 'rgb(59, 130, 246)',
                   backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  tension: 0.4,
-                  yAxisID: 'y1'
+                  tension: 0.3,
+                  fill: true,
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                  pointBackgroundColor: 'rgb(59, 130, 246)',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2
                 }
               ]
             },
             options: {
+              responsive: true,
               plugins: {
                 title: {
                   display: true,
-                  text: `${monitorName} - 24 Hour Uptime & Response Time`,
-                  font: { size: 16 }
+                  text: `${monitorName} - 24 Hour Response Time`,
+                  font: { size: 18, weight: 'bold' },
+                  padding: { top: 10, bottom: 20 }
                 },
                 legend: {
                   display: true,
-                  position: 'top'
+                  position: 'top',
+                  labels: {
+                    font: { size: 12 },
+                    padding: 15
+                  }
+                },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                  callbacks: {
+                    label: function(context) {
+                      return `Response Time: ${context.parsed.y.toFixed(2)} ms`;
+                    }
+                  }
                 }
               },
               scales: {
@@ -248,23 +270,40 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
                   type: 'linear',
                   display: true,
                   position: 'left',
-                  min: 0,
-                  max: 100,
+                  beginAtZero: true,
                   title: {
                     display: true,
-                    text: 'Uptime %'
-                  }
-                },
-                y1: {
-                  type: 'linear',
-                  display: true,
-                  position: 'right',
-                  title: {
-                    display: true,
-                    text: 'Response Time (ms)'
+                    text: 'Response Time (ms)',
+                    font: { size: 14, weight: 'bold' },
+                    padding: { top: 10, bottom: 10 }
+                  },
+                  ticks: {
+                    font: { size: 11 },
+                    callback: function(value) {
+                      return value + ' ms';
+                    }
                   },
                   grid: {
-                    drawOnChartArea: false
+                    color: 'rgba(0, 0, 0, 0.1)',
+                    drawBorder: true
+                  }
+                },
+                x: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: 'Time (00:00 - 24:00)',
+                    font: { size: 14, weight: 'bold' },
+                    padding: { top: 10, bottom: 10 }
+                  },
+                  ticks: {
+                    font: { size: 11 },
+                    maxRotation: 45,
+                    minRotation: 45
+                  },
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.1)',
+                    drawBorder: true
                   }
                 }
               }
