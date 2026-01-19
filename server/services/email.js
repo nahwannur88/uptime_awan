@@ -673,15 +673,19 @@ async function generateDailyReport(reportDate = null) {
 
       // Generate chart only if there's data (uses same date range)
       let chartBase64 = null;
-      try {
-        const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name, reportDateStr);
-        if (chartBuffer) {
-          chartBase64 = chartBuffer.toString('base64');
+      // Only try to generate chart if we have actual check data
+      if (monitorStats.total > 0) {
+        try {
+          const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name, reportDateStr);
+          if (chartBuffer) {
+            chartBase64 = chartBuffer.toString('base64');
+          } else {
+            console.warn(`Chart generation returned null for ${monitor.name} (but has ${monitorStats.total} checks)`);
+          }
+        } catch (error) {
+          console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
+          // Continue without chart
         }
-        // If chartBuffer is null, chartBase64 stays null (no chart will be shown)
-      } catch (error) {
-        console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
-        // Continue without chart
       }
 
       const monitorUptime = monitorStats.total > 0
