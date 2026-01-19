@@ -22,13 +22,17 @@ sudo apt upgrade -y
 ### 1.2 Install Node.js
 
 ```bash
-# Install Node.js 18.x (LTS)
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Install Node.js 22.x (LTS) - Recommended for best compatibility
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 
+# OR install Node.js 24.x (Latest LTS) if you want the newest features
+# curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+# sudo apt install -y nodejs
+
 # Verify installation
-node --version  # Should show v18.x.x
-npm --version   # Should show 9.x.x or higher
+node --version  # Should show v22.x.x or v24.x.x
+npm --version   # Should show 10.x.x or higher
 ```
 
 ### 1.3 Install Git

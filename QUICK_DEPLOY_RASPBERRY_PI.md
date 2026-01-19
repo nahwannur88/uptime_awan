@@ -60,12 +60,17 @@ sudo apt upgrade -y
 ### Step 2: Install Node.js
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Install Node.js 22.x (LTS) - Recommended
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 
+# OR Node.js 24.x (Latest LTS) for newest features
+# curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+# sudo apt install -y nodejs
+
 # Verify
-node --version  # Should show v18.x.x
-npm --version
+node --version  # Should show v22.x.x or v24.x.x
+npm --version   # Should show 10.x.x or higher
 ```
 
 ### Step 3: Install Build Tools

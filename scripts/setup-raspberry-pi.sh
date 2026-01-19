@@ -44,12 +44,13 @@ sudo apt upgrade -y
 echo ""
 echo -e "${GREEN}Step 2: Installing Node.js...${NC}"
 if ! command -v node &> /dev/null; then
-    echo "Installing Node.js 18.x..."
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    echo "Installing Node.js 22.x (LTS)..."
+    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
     sudo apt install -y nodejs
 else
     NODE_VERSION=$(node -v)
     echo "Node.js already installed: $NODE_VERSION"
+    echo "Note: Recommended version is Node.js 22.x (LTS) or 24.x (LTS)"
 fi
 
 echo ""
