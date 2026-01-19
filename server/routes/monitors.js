@@ -78,5 +78,34 @@ router.post('/:id/check', async (req, res) => {
   }
 });
 
+// Check all monitors on demand
+router.post('/check-all', async (req, res) => {
+  try {
+    const monitors = await getMonitors();
+    const activeMonitors = monitors.filter(m => m.is_active === 1);
+    
+    // Check all monitors in parallel (but don't wait for all to complete)
+    const checkPromises = activeMonitors.map(monitor => 
+      checkMonitor(monitor).catch(err => {
+        console.error(`Error checking monitor ${monitor.name}:`, err);
+        return null;
+      })
+    );
+    
+    // Start all checks but don't wait for completion
+    Promise.all(checkPromises).then(() => {
+      console.log(`Completed checking ${activeMonitors.length} monitors`);
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `Started checking ${activeMonitors.length} monitors`,
+      count: activeMonitors.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
 

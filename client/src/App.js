@@ -184,6 +184,27 @@ function App() {
     }
   };
 
+  const handleRunAllTests = async () => {
+    try {
+      // Run speed test
+      await fetch('/api/speedtest/run', {
+        method: 'POST',
+      });
+      
+      // Check all monitors
+      await fetch('/api/monitors/check-all', {
+        method: 'POST',
+      });
+      
+      // Refresh monitors after a short delay to see updated results
+      setTimeout(() => {
+        fetchMonitors();
+      }, 2000);
+    } catch (error) {
+      console.error('Error running all tests:', error);
+    }
+  };
+
   return (
     <div className="App">
       <header className="app-header">
@@ -213,8 +234,8 @@ function App() {
             </button>
             <button 
               className="header-icon-btn" 
-              onClick={handleRunSpeedTest}
-              title="Run Speed Test"
+              onClick={handleRunAllTests}
+              title="Run Speed Test & Check All Monitors"
             >
               <Wifi size={24} />
             </button>
