@@ -126,12 +126,12 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                                monitor.current_status === 'down' ? 'status-down' : 'status-unknown';
             const isFlipped = flippedMonitors.has(monitor.id);
             return (
-              <div 
-                key={monitor.id} 
-                className={`monitor-item ${statusClass} ${isFlipped ? 'flipped' : ''}`}
-                onClick={() => toggleFlip(monitor.id)}
-              >
-                <div className="monitor-card-inner">
+              <div key={monitor.id} className={`monitor-item-wrapper ${statusClass}`}>
+                <div 
+                  className={`monitor-item ${isFlipped ? 'flipped' : ''}`}
+                  onClick={() => toggleFlip(monitor.id)}
+                >
+                  <div className="monitor-card-inner">
                   {/* Front side */}
                   <div className="monitor-card-front">
                     <div className="monitor-header">
@@ -147,32 +147,12 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                           <span className="monitor-type-badge">{monitor.type?.toUpperCase() || 'HTTP'}</span>
                         </div>
                       </div>
-                      <div className="monitor-actions" onClick={(e) => e.stopPropagation()}>
-                        <button 
-                          className="edit-btn" 
-                          onClick={() => onEditMonitor(monitor)}
-                          title="Edit monitor"
-                        >
-                          <Edit size={12} />
-                        </button>
-                        <button 
-                          className="delete-btn" 
-                          onClick={() => onDeleteMonitor(monitor.id)}
-                          title="Delete monitor"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
                     </div>
                   </div>
                   
                   {/* Back side */}
                   <div className="monitor-card-back">
                     <div className="monitor-details">
-                      <div className="detail-section">
-                        <div className="detail-label">Monitor Name</div>
-                        <div className="detail-value">{monitor.name}</div>
-                      </div>
                       <div className="detail-section">
                         <div className="detail-label">URL / IP Address</div>
                         <div className="detail-value">
@@ -186,22 +166,6 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                           )}
                         </div>
                       </div>
-                      <div className="detail-section">
-                        <div className="detail-label">Type</div>
-                        <div className="detail-value">{monitor.type?.toUpperCase() || 'HTTP'}</div>
-                      </div>
-                      <div className="detail-section">
-                        <div className="detail-label">Status</div>
-                        <div className="detail-value">
-                          <span className={`status-indicator ${monitor.current_status || 'unknown'}`}>
-                            {monitor.current_status?.toUpperCase() || 'UNKNOWN'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="detail-section">
-                        <div className="detail-label">Uptime</div>
-                        <div className="detail-value">{formatUptime(monitor.uptime_percentage)}%</div>
-                      </div>
                       {monitor.last_check && (
                         <div className="detail-section">
                           <div className="detail-label">Last Check</div>
@@ -214,24 +178,6 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                           <div className="detail-value">{new Date(monitor.next_check).toLocaleString()}</div>
                         </div>
                       )}
-                    </div>
-                    <div className="monitor-actions-back" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="edit-btn" 
-                        onClick={() => onEditMonitor(monitor)}
-                        title="Edit monitor"
-                      >
-                        <Edit size={12} />
-                        Edit
-                      </button>
-                      <button 
-                        className="delete-btn" 
-                        onClick={() => onDeleteMonitor(monitor.id)}
-                        title="Delete monitor"
-                      >
-                        <Trash2 size={12} />
-                        Delete
-                      </button>
                     </div>
                   </div>
                 </div>
