@@ -230,12 +230,12 @@
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(148, 163, 184, 0.1);
-  padding: 0.625rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   border-left: 3px solid;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .monitor-card-back {
