@@ -276,7 +276,7 @@ npm install dotenv
 
 # Email dependencies
 npm install nodemailer
-npm install chart.js-node-canvas
+npm install chartjs-node-canvas
 npm install canvas
 
 # Dev dependencies (optional)

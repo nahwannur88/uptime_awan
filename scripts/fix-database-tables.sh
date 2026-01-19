@@ -43,6 +43,15 @@ CREATE TABLE IF NOT EXISTS email_send_status (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create speedtest_settings table if it doesn't exist
+CREATE TABLE IF NOT EXISTS speedtest_settings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  enabled INTEGER DEFAULT 1,
+  interval INTEGER DEFAULT 3600000,
+  auto_run INTEGER DEFAULT 1,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Verify tables exist
 SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;
 EOF

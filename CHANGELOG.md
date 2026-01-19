@@ -14,7 +14,7 @@ All notable changes to Uptime Awan Dashboard will be documented in this file.
 
 ### Technical
 - Added `nodemailer` for email sending
-- Added `chart.js-node-canvas` for chart generation in emails
+- Added `chartjs-node-canvas` for chart generation in emails
 - Added `canvas` dependency for server-side chart rendering
 - New `email_settings` database table
 - Email service with daily scheduler

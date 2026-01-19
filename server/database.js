@@ -109,44 +109,44 @@ function createTables() {
           reject(err);
           return;
         }
-      });
-
-      // Email send status table
-      db.run(`
-        CREATE TABLE IF NOT EXISTS email_send_status (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          report_date DATE,
-          status TEXT,
-          attempts INTEGER DEFAULT 0,
-          last_attempt DATETIME,
-          error_message TEXT,
-          sent_at DATETIME,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `, (err) => {
-        if (err) {
-          console.error('Error creating email_send_status table:', err);
-          reject(err);
-          return;
-        }
         
-        // Speedtest settings table
+        // Email send status table
         db.run(`
-          CREATE TABLE IF NOT EXISTS speedtest_settings (
+          CREATE TABLE IF NOT EXISTS email_send_status (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            enabled INTEGER DEFAULT 1,
-            interval INTEGER DEFAULT 3600000,
-            auto_run INTEGER DEFAULT 1,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            report_date DATE,
+            status TEXT,
+            attempts INTEGER DEFAULT 0,
+            last_attempt DATETIME,
+            error_message TEXT,
+            sent_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )
         `, (err) => {
           if (err) {
-            console.error('Error creating speedtest_settings table:', err);
+            console.error('Error creating email_send_status table:', err);
             reject(err);
             return;
           }
-          console.log('Database tables initialized');
-          resolve();
+          
+          // Speedtest settings table
+          db.run(`
+            CREATE TABLE IF NOT EXISTS speedtest_settings (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              enabled INTEGER DEFAULT 1,
+              interval INTEGER DEFAULT 3600000,
+              auto_run INTEGER DEFAULT 1,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+          `, (err) => {
+            if (err) {
+              console.error('Error creating speedtest_settings table:', err);
+              reject(err);
+              return;
+            }
+            console.log('Database tables initialized');
+            resolve();
+          });
         });
       });
     });
