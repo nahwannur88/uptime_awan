@@ -144,7 +144,6 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                           <span className={`status-indicator ${monitor.current_status || 'unknown'}`}>
                             {monitor.current_status?.toUpperCase() || 'UNKNOWN'}
                           </span>
-                          <span className="monitor-type-badge">{monitor.type?.toUpperCase() || 'HTTP'}</span>
                         </div>
                       </div>
                       <div className="monitor-actions" onClick={(e) => e.stopPropagation()}>
@@ -169,29 +168,29 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                   {/* Back side */}
                   <div className="monitor-card-back">
                     <div className="monitor-details">
-                      <div className="detail-section">
-                        <div className="detail-label">URL / IP Address</div>
-                        <div className="detail-value">
+                      <div className="detail-row">
+                        <span className="detail-label-inline">URL / IP:</span>
+                        <span className="detail-value-inline">
                           {monitor.type === 'ping' || monitor.type === 'tcp' ? (
-                            <span>{monitor.url}</span>
+                            monitor.url
                           ) : (
                             <a href={monitor.url.startsWith('http') ? monitor.url : `http://${monitor.url}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                               {monitor.url}
-                              <ExternalLink size={12} />
+                              <ExternalLink size={10} />
                             </a>
                           )}
-                        </div>
+                        </span>
                       </div>
                       {monitor.last_check && (
-                        <div className="detail-section">
-                          <div className="detail-label">Last Check</div>
-                          <div className="detail-value">{new Date(monitor.last_check).toLocaleString()}</div>
+                        <div className="detail-row">
+                          <span className="detail-label-inline">Last:</span>
+                          <span className="detail-value-inline">{new Date(monitor.last_check).toLocaleString()}</span>
                         </div>
                       )}
                       {monitor.next_check && (
-                        <div className="detail-section">
-                          <div className="detail-label">Next Check</div>
-                          <div className="detail-value">{new Date(monitor.next_check).toLocaleString()}</div>
+                        <div className="detail-row">
+                          <span className="detail-label-inline">Next:</span>
+                          <span className="detail-value-inline">{new Date(monitor.next_check).toLocaleString()}</span>
                         </div>
                       )}
                     </div>
