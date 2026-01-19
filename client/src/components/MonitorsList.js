@@ -198,22 +198,6 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                   </div>
                 </div>
                 </div>
-                <div className="monitor-actions-static" onClick={(e) => e.stopPropagation()}>
-                  <button 
-                    className="edit-btn" 
-                    onClick={() => onEditMonitor(monitor)}
-                    title="Edit monitor"
-                  >
-                    <Edit size={12} />
-                  </button>
-                  <button 
-                    className="delete-btn" 
-                    onClick={() => onDeleteMonitor(monitor.id)}
-                    title="Delete monitor"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
               </div>
             );
           })
