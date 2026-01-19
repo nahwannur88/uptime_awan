@@ -365,13 +365,13 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
       
       db.all(
         `SELECT 
-          strftime('%H', timestamp) as hour,
+          strftime('%H', datetime(timestamp, 'localtime')) as hour,
           COUNT(*) as total_checks,
           SUM(CASE WHEN status = 'up' THEN 1 ELSE 0 END) as up_checks,
           AVG(response_time) as avg_response_time
          FROM monitor_checks
          WHERE monitor_id = ? AND timestamp >= ? AND timestamp <= ?
-         GROUP BY strftime('%H', timestamp)
+         GROUP BY strftime('%H', datetime(timestamp, 'localtime'))
          ORDER BY hour`,
         [monitorId, targetDate.toISOString(), targetDateEnd.toISOString()],
         async (err, rows) => {
