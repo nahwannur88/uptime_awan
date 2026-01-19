@@ -707,26 +707,61 @@ async function generateDailyReport(reportDate = null) {
       `;
     }
 
-    // Add speed test section
-    if (latestSpeedTest) {
+    // Add speed test section with chart
+    let speedTestChartBase64 = null;
+    try {
+      const speedTestChartBuffer = await generateSpeedTestChart(reportDateStr);
+      speedTestChartBase64 = speedTestChartBuffer.toString('base64');
+    } catch (error) {
+      console.warn('Could not generate speed test chart:', error.message);
+    }
+
+    // Get speed test data for the target date
+    const speedTestsForDate = await new Promise((resolve, reject) => {
+      db.all(
+        `SELECT * FROM speedtest_results 
+         WHERE timestamp >= ? AND timestamp <= ?
+         ORDER BY timestamp DESC`,
+        [targetDate.toISOString(), targetDateEnd.toISOString()],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
+
+    if (speedTestsForDate && speedTestsForDate.length > 0) {
+      const latestSpeedTest = speedTestsForDate[0];
+      const avgDownload = speedTestsForDate.reduce((sum, test) => sum + test.download_speed, 0) / speedTestsForDate.length;
+      const avgUpload = speedTestsForDate.reduce((sum, test) => sum + test.upload_speed, 0) / speedTestsForDate.length;
+      const avgPing = speedTestsForDate.reduce((sum, test) => sum + test.ping, 0) / speedTestsForDate.length;
+
       htmlReport += `
         <div class="monitor-section">
           <h2>🌐 Network Speed Test</h2>
           <div class="monitor-item">
             <div class="monitor-stats">
               <div>
-                <strong>Download:</strong> ${latestSpeedTest.download_speed.toFixed(2)} Mbps
+                <strong>Average Download:</strong> ${avgDownload.toFixed(2)} Mbps
               </div>
               <div>
-                <strong>Upload:</strong> ${latestSpeedTest.upload_speed.toFixed(2)} Mbps
+                <strong>Average Upload:</strong> ${avgUpload.toFixed(2)} Mbps
               </div>
               <div>
-                <strong>Ping:</strong> ${latestSpeedTest.ping.toFixed(2)} ms
+                <strong>Average Ping:</strong> ${avgPing.toFixed(2)} ms
+              </div>
+              <div>
+                <strong>Tests Performed:</strong> ${speedTestsForDate.length}
               </div>
             </div>
             <div style="margin-top: 15px; color: #666;">
-              <small>Server: ${latestSpeedTest.server_name} | ISP: ${latestSpeedTest.isp}</small>
+              <small>Latest Test - Server: ${latestSpeedTest.server_name || 'N/A'} | ISP: ${latestSpeedTest.isp || 'N/A'}</small>
             </div>
+            ${speedTestChartBase64 ? `
+            <div class="chart-container">
+              <img src="data:image/png;base64,${speedTestChartBase64}" alt="Speed Test Chart" />
+            </div>
+            ` : ''}
           </div>
         </div>
       `;
