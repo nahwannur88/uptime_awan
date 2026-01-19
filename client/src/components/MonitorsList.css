@@ -170,27 +170,9 @@
   flex-direction: column;
   gap: 0;
   position: relative;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 8px;
-  border-left: 3px solid;
-  overflow: hidden;
-}
-
-.monitor-item-wrapper.status-up {
-  border-left-color: #22c55e;
-  background: rgba(15, 23, 42, 0.7);
-}
-
-.monitor-item-wrapper.status-down {
-  border-left-color: #ef4444;
-  background: rgba(15, 23, 42, 0.7);
-  animation: blink-down 2s infinite;
-}
-
-.monitor-item-wrapper.status-unknown {
-  border-left-color: #94a3b8;
-  background: rgba(15, 23, 42, 0.6);
+  background: transparent;
+  border: none;
+  overflow: visible;
 }
 
 .monitor-item {
