@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './MonitorsList.css';
 import { Plus, Trash2, ExternalLink, Edit, Search, X } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [flippedMonitors, setFlippedMonitors] = useState(new Set());
+  const [monitorHistory, setMonitorHistory] = useState({});
   const flipTimeoutsRef = useRef({});
   
   const toggleFlip = (monitorId) => {
