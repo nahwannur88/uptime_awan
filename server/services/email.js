@@ -385,28 +385,20 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
 
       console.log(`Found ${dataCheck.count} checks for monitor ${monitorId} on ${reportDate || 'yesterday'}`);
       
+      // Get all individual check records (not averaged) to show actual data points
       db.all(
         `SELECT 
-          strftime('%H', datetime(timestamp, 'localtime')) as hour,
-          COUNT(*) as total_checks,
-          SUM(CASE WHEN status = 'up' THEN 1 ELSE 0 END) as up_checks,
-          AVG(response_time) as avg_response_time
+          timestamp,
+          response_time,
+          status
          FROM monitor_checks
          WHERE monitor_id = ? AND timestamp >= ? AND timestamp <= ?
-         GROUP BY strftime('%H', datetime(timestamp, 'localtime'))
-         ORDER BY hour`,
+         ORDER BY timestamp ASC`,
         [monitorId, targetDate.toISOString(), targetDateEnd.toISOString()],
         async (err, rows) => {
           if (err) {
             reject(err);
             return;
-          }
-
-          // Create hourly data map
-          const hourlyData = {};
-          for (let i = 0; i < 24; i++) {
-            const hour = String(i).padStart(2, '0');
-            hourlyData[hour] = { uptime: 0, responseTime: 0 };
           }
 
           // Check if there's any data
@@ -416,55 +408,58 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             return;
           }
 
-          let totalChecks = 0;
-          rows.forEach(row => {
-            // Ensure hour is zero-padded (e.g., "00", "01", "23")
-            const hour = String(row.hour).padStart(2, '0');
-            const checks = parseInt(row.total_checks) || 0;
-            totalChecks += checks;
-            hourlyData[hour] = {
-              uptime: checks > 0 ? (row.up_checks / checks) * 100 : 0,
-              responseTime: row.avg_response_time ? parseFloat(row.avg_response_time) : 0
-            };
-          });
+          console.log(`Chart data for monitor ${monitorId}: ${rows.length} individual check records`);
 
-          // Check if there are any actual checks (even if response time is 0)
-          if (totalChecks === 0) {
-            // No checks performed - return null to indicate blank chart
-            console.log(`No checks found for monitor ${monitorId} on ${reportDate || 'yesterday'}`);
-            resolve(null);
-            return;
-          }
-
-          console.log(`Chart data for monitor ${monitorId}: ${totalChecks} total checks across ${rows.length} hours`);
-
-          // Prepare chart data - only response time, all 24 hours (00:00 to 23:00)
-          const hours = [];
-          const responseTimeValues = [];
-          
-          // Generate all 24 hours from 00:00 to 23:00
+          // Create a map of all 24 hours for x-axis labels
+          const hourLabels = [];
           for (let i = 0; i < 24; i++) {
             const hour = String(i).padStart(2, '0');
-            hours.push(`${hour}:00`);
-            // Show data if available, otherwise null (will create gap in chart)
-            const hourData = hourlyData[hour];
-            // Use the response time if available (even if 0, as long as there was a check)
-            // Check if this hour has data in the original rows
-            const hasDataForHour = rows.some(row => {
-              const rowHour = String(row.hour).padStart(2, '0');
-              return rowHour === hour;
-            });
-            // If we have data for this hour, use it (even if response time is 0)
-            if (hasDataForHour && hourData) {
-              responseTimeValues.push(hourData.responseTime);
+            hourLabels.push(`${hour}:00`);
+          }
+          hourLabels.push('24:00');
+
+          // Process actual check data - group by hour but keep actual values
+          // Create data points for each hour, showing actual response times
+          const chartData = [];
+          const dataByHour = {};
+          
+          // Initialize all hours with null (no data)
+          for (let i = 0; i < 24; i++) {
+            const hour = String(i).padStart(2, '0');
+            dataByHour[hour] = [];
+          }
+          
+          // Group checks by hour
+          rows.forEach(row => {
+            const checkDate = new Date(row.timestamp);
+            const hour = String(checkDate.getHours()).padStart(2, '0');
+            if (row.response_time !== null && row.response_time !== undefined) {
+              dataByHour[hour].push(parseFloat(row.response_time));
+            }
+          });
+          
+          // For each hour, use the actual values (if multiple checks, use the last one or average)
+          // But to match the Excel-style chart, we'll use the last check value in each hour
+          const responseTimeValues = [];
+          const hourTimes = [];
+          
+          for (let i = 0; i < 24; i++) {
+            const hour = String(i).padStart(2, '0');
+            hourTimes.push(`${hour}:00`);
+            
+            if (dataByHour[hour].length > 0) {
+              // Use the last value in the hour (most recent check) to match Excel behavior
+              responseTimeValues.push(dataByHour[hour][dataByHour[hour].length - 1]);
             } else {
+              // No data for this hour - use null to create gap
               responseTimeValues.push(null);
             }
           }
           
-          // Add 24:00 at the end to show the full day
-          hours.push('24:00');
-          responseTimeValues.push(responseTimeValues[23]); // Use last hour's value
+          // Add 24:00 at the end
+          hourTimes.push('24:00');
+          // For 24:00, use the last hour's value if available
+          responseTimeValues.push(responseTimeValues[23] !== null ? responseTimeValues[23] : null);
 
           // Create chart
           const width = 800;
@@ -474,23 +469,24 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           const configuration = {
             type: 'line',
             data: {
-              labels: hours,
+              labels: hourTimes,
               datasets: [
                 {
                   label: 'Response Time (ms)',
                   data: responseTimeValues,
                   borderColor: 'rgb(59, 130, 246)',
                   backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  tension: 0.3,
+                  tension: 0.1, // Lower tension for more linear lines like Excel
                   fill: false,
-                  spanGaps: false,
+                  spanGaps: false, // Don't connect across gaps - show breaks like Excel
                   pointRadius: function(context) {
-                    return context.parsed.y === null ? 0 : 4;
+                    return context.parsed.y === null ? 0 : 3;
                   },
-                  pointHoverRadius: 6,
+                  pointHoverRadius: 5,
                   pointBackgroundColor: 'rgb(59, 130, 246)',
                   pointBorderColor: '#fff',
-                  pointBorderWidth: 2
+                  pointBorderWidth: 1.5,
+                  showLine: true
                 }
               ]
             },
@@ -516,7 +512,14 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
                   intersect: false,
                   callbacks: {
                     label: function(context) {
+                      if (context.parsed.y === null) {
+                        return 'No data';
+                      }
                       return `Response Time: ${context.parsed.y.toFixed(2)} ms`;
+                    },
+                    filter: function(tooltipItem) {
+                      // Only show tooltip if there's actual data
+                      return tooltipItem.parsed.y !== null;
                     }
                   }
                 }
