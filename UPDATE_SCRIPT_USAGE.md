@@ -20,6 +20,8 @@ chmod +x scripts/update-from-git.sh
 
 # Force rebuild client application
 ./scripts/update-from-git.sh --build
+
+bash scripts/update-from-git.sh --build
 ```
 
 ### What It Does
