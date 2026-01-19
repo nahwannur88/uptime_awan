@@ -53,7 +53,7 @@ sudo apt install -y build-essential python3
 
 ```bash
 cd /home/pi
-git clone https://github.com/yourusername/uptime-awan.git
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 cd uptime-awan
 ```
 

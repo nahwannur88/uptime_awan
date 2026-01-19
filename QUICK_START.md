@@ -9,7 +9,7 @@ Get Uptime Awan Dashboard running in minutes!
 ```bash
 # Clone repository
 cd /home/pi
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git uptime-awan
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 cd uptime-awan
 
 # Install dependencies

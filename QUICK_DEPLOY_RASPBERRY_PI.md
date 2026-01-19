@@ -16,11 +16,9 @@ ssh pi@192.168.100.213
 
 ```bash
 cd /home/pi
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git uptime-awan
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 cd uptime-awan
 ```
-
-**Replace `YOUR_USERNAME` and `YOUR_REPO` with your actual GitHub repository details.**
 
 ### Step 3: Run the Setup Script
 
@@ -83,7 +81,7 @@ sudo apt install -y build-essential python3 git
 
 ```bash
 cd /home/pi
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git uptime-awan
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 cd uptime-awan
 ```
 

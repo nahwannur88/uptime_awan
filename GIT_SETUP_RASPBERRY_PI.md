@@ -59,14 +59,12 @@ cd /home/pi
 
 ### 2.2 Clone the Repository
 
-Replace `YOUR_GITHUB_USERNAME` and `YOUR_REPO_NAME` with your actual repository details:
-
 ```bash
 # Using HTTPS (recommended)
-git clone https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME.git uptime-awan
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 
 # OR using SSH (if you have SSH keys set up)
-# git clone git@github.com:YOUR_GITHUB_USERNAME/YOUR_REPO_NAME.git uptime-awan
+# git clone git@github.com:nahwannur88/uptime_awan.git uptime-awan
 ```
 
 ### 2.3 Navigate to Project Directory
@@ -534,7 +532,7 @@ sudo apt install -y nodejs build-essential python3 git
 
 # 3. Clone repository
 cd /home/pi
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git uptime-awan
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 cd uptime-awan
 
 # 4. Install dependencies

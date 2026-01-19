@@ -46,7 +46,7 @@ See [NETWORK_ACCESS.md](./NETWORK_ACCESS.md) for detailed instructions.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/uptime-awan.git
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 cd uptime-awan
 ```
 
@@ -109,7 +109,7 @@ NODE_ENV=production npm start
 ```bash
 # Clone repository
 cd /home/pi
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git uptime-awan
+git clone https://github.com/nahwannur88/uptime_awan.git uptime-awan
 cd uptime-awan
 
 # Follow the setup guide
