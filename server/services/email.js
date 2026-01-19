@@ -363,6 +363,28 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
       const targetDateEnd = new Date(targetDate);
       targetDateEnd.setHours(23, 59, 59, 999);
       
+      // First check if there's any data at all
+      const dataCheck = await new Promise((resolve, reject) => {
+        db.get(
+          `SELECT COUNT(*) as count
+           FROM monitor_checks
+           WHERE monitor_id = ? AND timestamp >= ? AND timestamp <= ?`,
+          [monitorId, targetDate.toISOString(), targetDateEnd.toISOString()],
+          (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+          }
+        );
+      });
+
+      if (!dataCheck || dataCheck.count === 0) {
+        console.log(`No data found for monitor ${monitorId} on ${reportDate || 'yesterday'}`);
+        resolve(null);
+        return;
+      }
+
+      console.log(`Found ${dataCheck.count} checks for monitor ${monitorId} on ${reportDate || 'yesterday'}`);
+      
       db.all(
         `SELECT 
           strftime('%H', datetime(timestamp, 'localtime')) as hour,
