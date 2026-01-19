@@ -350,36 +350,54 @@ function updateMonitorStatus(monitorId) {
   );
 }
 
-const monitorIntervals = new Map(); // Track intervals for each monitor
+const monitorIntervals = new Map(); // Track intervals for each monitor: { intervalId, currentInterval }
+const monitorScheduledIntervals = new Map(); // Track the scheduled interval value for each monitor
 
 // Helper function to schedule a monitor check
 function scheduleMonitorCheck(monitor) {
-  // Clear existing interval for this monitor
-  if (monitorIntervals.has(monitor.id)) {
-    clearInterval(monitorIntervals.get(monitor.id));
-    monitorIntervals.delete(monitor.id);
-  }
-  
   const interval = monitor.interval || 60000; // Default: 1 minute
   const intervalMs = parseInt(interval);
   
-  // Check immediately
-  checkMonitor(monitor).catch(console.error);
+  // Check if monitor is already scheduled with the same interval
+  if (monitorIntervals.has(monitor.id)) {
+    const scheduledInterval = monitorScheduledIntervals.get(monitor.id);
+    
+    // If interval hasn't changed, don't reschedule
+    if (scheduledInterval === intervalMs) {
+      return; // Already scheduled with correct interval, skip
+    }
+    
+    // Interval changed, clear old interval
+    clearInterval(monitorIntervals.get(monitor.id).intervalId);
+    monitorIntervals.delete(monitor.id);
+    monitorScheduledIntervals.delete(monitor.id);
+  }
+  
+  // Check immediately (only if not already scheduled)
+  if (!monitorIntervals.has(monitor.id)) {
+    checkMonitor(monitor).catch(console.error);
+  }
   
   // Schedule recurring checks
   const intervalId = setInterval(() => {
     checkMonitor(monitor).catch(console.error);
   }, intervalMs);
   
-  monitorIntervals.set(monitor.id, intervalId);
+  monitorIntervals.set(monitor.id, { intervalId, currentInterval: intervalMs });
+  monitorScheduledIntervals.set(monitor.id, intervalMs);
+  
+  const intervalMinutes = Math.floor(intervalMs / 60000);
+  console.log(`Scheduled monitor "${monitor.name}" (ID: ${monitor.id}) with interval: ${intervalMinutes} minutes (${intervalMs}ms)`);
 }
 
 // Helper function to reschedule a monitor (used when interval changes)
 function rescheduleMonitor(monitor) {
   // Clear existing interval
   if (monitorIntervals.has(monitor.id)) {
-    clearInterval(monitorIntervals.get(monitor.id));
+    const intervalData = monitorIntervals.get(monitor.id);
+    clearInterval(intervalData.intervalId);
     monitorIntervals.delete(monitor.id);
+    monitorScheduledIntervals.delete(monitor.id);
   }
   
   // Schedule with new interval
@@ -402,14 +420,15 @@ async function startMonitoringService() {
         const activeIds = new Set(monitors.map(m => m.id));
         
         // Remove intervals for monitors that are no longer active
-        for (const [monitorId, intervalId] of monitorIntervals.entries()) {
+        for (const [monitorId, intervalData] of monitorIntervals.entries()) {
           if (!activeIds.has(monitorId)) {
-            clearInterval(intervalId);
+            clearInterval(intervalData.intervalId);
             monitorIntervals.delete(monitorId);
+            monitorScheduledIntervals.delete(monitorId);
           }
         }
         
-        // Schedule checks for all active monitors
+        // Schedule checks for all active monitors (only if not already scheduled or interval changed)
         for (const monitor of monitors) {
           scheduleMonitorCheck(monitor);
         }
@@ -503,8 +522,10 @@ function updateMonitor(id, monitor) {
           } else {
             // Remove interval if monitor is deactivated
             if (monitorIntervals.has(id)) {
-              clearInterval(monitorIntervals.get(id));
+              const intervalData = monitorIntervals.get(id);
+              clearInterval(intervalData.intervalId);
               monitorIntervals.delete(id);
+              monitorScheduledIntervals.delete(id);
             }
           }
           
@@ -523,8 +544,18 @@ function deleteMonitor(id) {
   return new Promise((resolve, reject) => {
     const db = getDatabase();
     db.run(`DELETE FROM monitors WHERE id = ?`, [id], function(err) {
-      if (err) reject(err);
-      else resolve({ deleted: this.changes });
+      if (err) {
+        reject(err);
+      } else {
+        // Clean up interval if monitor was deleted
+        if (monitorIntervals.has(id)) {
+          const intervalData = monitorIntervals.get(id);
+          clearInterval(intervalData.intervalId);
+          monitorIntervals.delete(id);
+          monitorScheduledIntervals.delete(id);
+        }
+        resolve({ deleted: this.changes });
+      }
     });
   });
 }
