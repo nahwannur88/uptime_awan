@@ -350,11 +350,32 @@ function updateMonitorStatus(monitorId) {
   );
 }
 
+const monitorIntervals = new Map(); // Track intervals for each monitor
+
 async function startMonitoringService() {
   const db = getDatabase();
   
-  // Check all active monitors
-  setInterval(() => {
+  function scheduleMonitorCheck(monitor) {
+    // Clear existing interval for this monitor
+    if (monitorIntervals.has(monitor.id)) {
+      clearInterval(monitorIntervals.get(monitor.id));
+    }
+    
+    const interval = monitor.interval || 60000; // Default: 1 minute
+    const intervalMs = parseInt(interval);
+    
+    // Check immediately
+    checkMonitor(monitor).catch(console.error);
+    
+    // Schedule recurring checks
+    const intervalId = setInterval(() => {
+      checkMonitor(monitor).catch(console.error);
+    }, intervalMs);
+    
+    monitorIntervals.set(monitor.id, intervalId);
+  }
+  
+  function refreshAllMonitors() {
     db.all(
       `SELECT * FROM monitors WHERE is_active = 1`,
       async (err, monitors) => {
@@ -363,27 +384,54 @@ async function startMonitoringService() {
           return;
         }
 
+        // Get current active monitor IDs
+        const activeIds = new Set(monitors.map(m => m.id));
+        
+        // Remove intervals for monitors that are no longer active
+        for (const [monitorId, intervalId] of monitorIntervals.entries()) {
+          if (!activeIds.has(monitorId)) {
+            clearInterval(intervalId);
+            monitorIntervals.delete(monitorId);
+          }
+        }
+        
+        // Schedule checks for all active monitors
         for (const monitor of monitors) {
-          await checkMonitor(monitor);
+          scheduleMonitorCheck(monitor);
         }
       }
     );
-  }, parseInt(process.env.MONITOR_INTERVAL) || 60000); // Default: 1 minute
-
-  console.log('Monitoring service started');
+  }
+  
+  // Initial load
+  refreshAllMonitors();
+  
+  // Refresh every 30 seconds to pick up new/changed monitors
+  setInterval(refreshAllMonitors, 30000);
+  
+  console.log('Monitoring service started (respects individual monitor intervals)');
 }
 
 function getMonitors() {
   return new Promise((resolve, reject) => {
     const db = getDatabase();
     db.all(
-      `SELECT m.*, ms.current_status, ms.last_check, ms.uptime_percentage
+      `SELECT m.*, ms.current_status, ms.last_check, ms.uptime_percentage,
+              datetime(ms.last_check, '+' || (m.interval / 1000) || ' seconds') as next_check
        FROM monitors m
        LEFT JOIN monitor_status ms ON m.id = ms.monitor_id
        ORDER BY m.created_at DESC`,
       (err, rows) => {
         if (err) reject(err);
-        else resolve(rows);
+        else {
+          // Format the timestamps
+          const formattedRows = rows.map(row => ({
+            ...row,
+            last_check: row.last_check ? new Date(row.last_check).toISOString() : null,
+            next_check: row.next_check ? new Date(row.next_check).toISOString() : null
+          }));
+          resolve(formattedRows);
+        }
       }
     );
   });
@@ -428,8 +476,33 @@ function updateMonitor(id, monitor) {
         id
       ],
       function(err) {
-        if (err) reject(err);
-        else {
+        if (err) {
+          reject(err);
+        } else {
+          // Reschedule this monitor if it's active
+          if (monitor.is_active !== 0) {
+            db.get(`SELECT * FROM monitors WHERE id = ?`, [id], (err, updatedMonitor) => {
+              if (!err && updatedMonitor) {
+                // Reschedule with new interval
+                if (monitorIntervals.has(id)) {
+                  clearInterval(monitorIntervals.get(id));
+                  monitorIntervals.delete(id);
+                }
+                const interval = updatedMonitor.interval || 60000;
+                const intervalId = setInterval(() => {
+                  checkMonitor(updatedMonitor).catch(console.error);
+                }, parseInt(interval));
+                monitorIntervals.set(id, intervalId);
+              }
+            });
+          } else {
+            // Remove interval if monitor is deactivated
+            if (monitorIntervals.has(id)) {
+              clearInterval(monitorIntervals.get(id));
+              monitorIntervals.delete(id);
+            }
+          }
+          
           // Return updated monitor
           db.get(`SELECT * FROM monitors WHERE id = ?`, [id], (err, row) => {
             if (err) reject(err);

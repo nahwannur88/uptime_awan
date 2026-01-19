@@ -102,9 +102,11 @@ rm -f package-lock.json
 rm -rf node_modules
 
 # Reinstall
-npm install
 
-# If client dependencies changed
+
+rm -f package-lock.json
+rm -rf node_modules
+npm install
 cd client
 rm -f package-lock.json
 rm -rf node_modules

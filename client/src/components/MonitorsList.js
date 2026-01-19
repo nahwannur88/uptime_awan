@@ -125,6 +125,22 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                     </button>
                   </div>
                 </div>
+                {(monitor.last_check || monitor.next_check) && (
+                  <div className="monitor-check-times">
+                    {monitor.last_check && (
+                      <div className="check-time-item">
+                        <span className="check-time-label">Last:</span>
+                        <span className="check-time-value">{new Date(monitor.last_check).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {monitor.next_check && (
+                      <div className="check-time-item">
+                        <span className="check-time-label">Next:</span>
+                        <span className="check-time-value">{new Date(monitor.next_check).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })

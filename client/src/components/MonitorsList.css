@@ -226,6 +226,33 @@
   background: rgba(148, 163, 184, 0.08);
 }
 
+.monitor-check-times {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  font-size: 0.75rem;
+}
+
+.check-time-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.check-time-label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.check-time-value {
+  color: #e2e8f0;
+  font-family: 'Courier New', monospace;
+}
+
 .monitor-header {
   display: flex;
   justify-content: space-between;

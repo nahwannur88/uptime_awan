@@ -118,8 +118,14 @@ function SpeedTestCard({ data, history, onRunTest }) {
             </div>
             <div className="info-item">
               <span className="info-label">Last Test:</span>
-              <span className="info-value">{new Date(data.timestamp).toLocaleString()}</span>
+              <span className="info-value">{data.last_check ? new Date(data.last_check).toLocaleString() : (data.timestamp ? new Date(data.timestamp).toLocaleString() : 'Never')}</span>
             </div>
+            {data.next_check && (
+              <div className="info-item">
+                <span className="info-label">Next Test:</span>
+                <span className="info-value">{new Date(data.next_check).toLocaleString()}</span>
+              </div>
+            )}
           </div>
         </>
       )}
