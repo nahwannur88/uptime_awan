@@ -270,8 +270,25 @@
 
 .monitor-item.status-unknown .monitor-card-front,
 .monitor-item.status-unknown .monitor-card-back {
-  border-left-color: #94a3b8;
-  background: rgba(15, 23, 42, 0.6);
+  border-left: none;
+  background: transparent;
+}
+
+.monitor-actions-static {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  flex-shrink: 0;
+  background: rgba(15, 23, 42, 0.3);
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.monitor-actions-static .edit-btn,
+.monitor-actions-static .delete-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
 }
 
 .monitor-item:hover .monitor-card-front,
