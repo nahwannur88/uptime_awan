@@ -5,18 +5,41 @@ import { Plus, Trash2, ExternalLink, Edit, Search, X } from 'lucide-react';
 function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [flippedMonitors, setFlippedMonitors] = useState(new Set());
+  const flipTimeoutsRef = useRef({});
   
   const toggleFlip = (monitorId) => {
+    // Clear existing timeout for this monitor
+    if (flipTimeoutsRef.current[monitorId]) {
+      clearTimeout(flipTimeoutsRef.current[monitorId]);
+      delete flipTimeoutsRef.current[monitorId];
+    }
+    
     setFlippedMonitors(prev => {
       const newSet = new Set(prev);
       if (newSet.has(monitorId)) {
         newSet.delete(monitorId);
       } else {
         newSet.add(monitorId);
+        // Set timeout to auto-flip back after 1 minute
+        flipTimeoutsRef.current[monitorId] = setTimeout(() => {
+          setFlippedMonitors(prevSet => {
+            const updatedSet = new Set(prevSet);
+            updatedSet.delete(monitorId);
+            return updatedSet;
+          });
+          delete flipTimeoutsRef.current[monitorId];
+        }, 60000); // 1 minute
       }
       return newSet;
     });
   };
+  
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(flipTimeoutsRef.current).forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
   
   const filteredMonitors = monitors
     .filter(monitor => {
@@ -141,7 +164,6 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                         </button>
                       </div>
                     </div>
-                    <div className="flip-hint">Click to view details</div>
                   </div>
                   
                   {/* Back side */}
@@ -211,7 +233,6 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                         Delete
                       </button>
                     </div>
-                    <div className="flip-hint">Click to flip back</div>
                   </div>
                 </div>
               </div>
