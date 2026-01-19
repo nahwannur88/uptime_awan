@@ -194,6 +194,8 @@
   min-height: 80px;
   transition: transform 0.6s;
   transform-style: preserve-3d;
+  display: flex;
+  align-items: stretch;
 }
 
 .monitor-item.flipped .monitor-card-inner {
