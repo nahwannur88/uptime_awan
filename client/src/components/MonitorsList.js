@@ -9,6 +9,44 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
   const [monitorHistory, setMonitorHistory] = useState({});
   const flipTimeoutsRef = useRef({});
   
+  const fetchMonitorHistory = async (monitorId) => {
+    // Only fetch if not already loaded
+    if (monitorHistory[monitorId]) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/monitors/${monitorId}/history?limit=24`);
+      const data = await response.json();
+      if (data.success && data.data) {
+        // Process history data for chart
+        const chartData = data.data
+          .slice()
+          .reverse() // Reverse to show oldest to newest
+          .map(item => {
+            const date = new Date(item.timestamp);
+            return {
+              time: date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true
+              }),
+              responseTime: item.response_time || 0,
+              status: item.status,
+              fullDate: date.getTime()
+            };
+          });
+        
+        setMonitorHistory(prev => ({
+          ...prev,
+          [monitorId]: chartData
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching history for monitor ${monitorId}:`, error);
+    }
+  };
+  
   const toggleFlip = (monitorId) => {
     // Clear existing timeout for this monitor
     if (flipTimeoutsRef.current[monitorId]) {
@@ -22,6 +60,8 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
         newSet.delete(monitorId);
       } else {
         newSet.add(monitorId);
+        // Fetch history when flipping to back side
+        fetchMonitorHistory(monitorId);
         // Set timeout to auto-flip back after 1 minute
         flipTimeoutsRef.current[monitorId] = setTimeout(() => {
           setFlippedMonitors(prevSet => {
@@ -193,6 +233,47 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
                         <div className="detail-row">
                           <span className="detail-label-inline">Next:</span>
                           <span className="detail-value-inline">{new Date(monitor.next_check).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {monitorHistory[monitor.id] && monitorHistory[monitor.id].length > 0 && (
+                        <div className="monitor-history-chart">
+                          <div className="history-chart-container">
+                            <ResponsiveContainer width="100%" height={120}>
+                              <LineChart data={monitorHistory[monitor.id]}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis 
+                                  dataKey="time" 
+                                  stroke="#94a3b8"
+                                  tick={{ fontSize: 10 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={40}
+                                />
+                                <YAxis 
+                                  stroke="#94a3b8"
+                                  tick={{ fontSize: 10 }}
+                                  label={{ value: 'ms', angle: -90, position: 'insideLeft', style: { fontSize: 10 } }}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ 
+                                    background: '#1e293b', 
+                                    border: '1px solid #334155',
+                                    borderRadius: '8px',
+                                    color: '#e2e8f0',
+                                    fontSize: '11px'
+                                  }} 
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="responseTime" 
+                                  stroke="#3b82f6" 
+                                  strokeWidth={2}
+                                  dot={false}
+                                  name="Response Time (ms)"
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
                         </div>
                       )}
                     </div>
