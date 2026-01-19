@@ -387,6 +387,13 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             hourlyData[hour] = { uptime: 0, responseTime: 0 };
           }
 
+          // Check if there's any data
+          if (!rows || rows.length === 0) {
+            // No data - return null to indicate blank chart
+            resolve(null);
+            return;
+          }
+
           rows.forEach(row => {
             // Ensure hour is zero-padded (e.g., "00", "01", "23")
             const hour = String(row.hour).padStart(2, '0');
@@ -396,6 +403,14 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             };
           });
 
+          // Check if all response times are 0 (no actual data)
+          const hasData = Object.values(hourlyData).some(data => data.responseTime > 0 || data.uptime > 0);
+          if (!hasData) {
+            // No meaningful data - return null to indicate blank chart
+            resolve(null);
+            return;
+          }
+
           // Prepare chart data - only response time, all 24 hours (00:00 to 23:00)
           const hours = [];
           const responseTimeValues = [];
@@ -404,7 +419,9 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           for (let i = 0; i < 24; i++) {
             const hour = String(i).padStart(2, '0');
             hours.push(`${hour}:00`);
-            responseTimeValues.push(hourlyData[hour].responseTime || 0);
+            // Only show data if there are actual checks for that hour
+            const hourData = hourlyData[hour];
+            responseTimeValues.push(hourData && hourData.responseTime > 0 ? hourData.responseTime : null);
           }
           
           // Add 24:00 at the end to show the full day
@@ -686,18 +703,16 @@ async function generateDailyReport(reportDate = null) {
             </div>
 
             ${chartBase64 ? `
-            ${chartBase64 ? `
             <div class="chart-container">
-              <img src="data:image/png;base64,${chartBase64}" alt="Hourly Uptime Chart" />
+              <img src="data:image/png;base64,${chartBase64}" alt="Hourly Response Time Chart" />
+            </div>
+            ` : monitorStats.total > 0 ? `
+            <div class="chart-container">
+              <p style="color: #666; text-align: center; padding: 20px;">No chart data available for this period</p>
             </div>
             ` : `
             <div class="chart-container">
-              <p style="color: #666; text-align: center; padding: 20px;">Chart generation not available (canvas module not installed)</p>
-            </div>
-            `}
-            ` : `
-            <div class="chart-container">
-              <p style="color: #666; text-align: center; padding: 20px;">Chart generation not available (canvas module not installed)</p>
+              <p style="color: #999; text-align: center; padding: 20px; font-style: italic;">No monitoring data available for ${reportDateStr}</p>
             </div>
             `}
           </div>
