@@ -423,7 +423,9 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             // Show data if available, otherwise null (will create gap in chart)
             const hourData = hourlyData[hour];
             // Use the response time if available (even if 0, as long as there was a check)
-            responseTimeValues.push(hourData ? hourData.responseTime : null);
+            // Check if this hour has data in the original rows
+            const hasDataForHour = rows.some(row => String(row.hour).padStart(2, '0') === hour);
+            responseTimeValues.push(hasDataForHour && hourData ? hourData.responseTime : null);
           }
           
           // Add 24:00 at the end to show the full day
