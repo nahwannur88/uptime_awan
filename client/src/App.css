@@ -36,7 +36,9 @@
   }
   
   .dashboard-grid {
+    grid-template-columns: 1fr;
     gap: 0.5rem;
+    margin-top: 0.5rem;
   }
   
   .app-header {
@@ -50,6 +52,12 @@
   .header-right svg {
     width: 16px;
     height: 16px;
+  }
+  
+  .monitors-list-card,
+  .speed-test-card {
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
   }
 }
 
