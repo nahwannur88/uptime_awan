@@ -33,6 +33,7 @@
   .app-main {
     padding: 0.5rem;
     overflow-y: visible;
+    max-height: calc(100vh - 100px);
   }
   
   .dashboard-grid {
@@ -43,6 +44,9 @@
   
   .app-header {
     padding: 0.5rem 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
   
   .header-left h1 {
@@ -54,9 +58,13 @@
     height: 16px;
   }
   
-  .monitors-list-card,
+  .monitors-list-card {
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+  }
+  
   .speed-test-card {
-    max-height: calc(100vh - 180px);
+    max-height: calc(100vh - 280px);
     overflow-y: auto;
   }
 }

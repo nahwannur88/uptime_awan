@@ -130,7 +130,7 @@ function SpeedTestCard({ data, history, onRunTest }) {
         </>
       )}
 
-      {chartData.length > 0 && (
+      {chartData && chartData.length > 0 ? (
         <div className="speed-chart">
           <h3>Speed History</h3>
           <div className="chart-container">
@@ -164,6 +164,13 @@ function SpeedTestCard({ data, history, onRunTest }) {
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
+        </div>
+      ) : (
+        <div className="speed-chart">
+          <h3>Speed History</h3>
+          <div className="chart-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+            No history data available
           </div>
         </div>
       )}
