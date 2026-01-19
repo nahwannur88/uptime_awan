@@ -356,7 +356,12 @@ async function startMonitoringService() {
   const db = getDatabase();
   
   function scheduleMonitorCheck(monitor) {
-    // Clear existing interval for this monitor
+    // Skip if already scheduled (unless we're updating)
+    if (monitorIntervals.has(monitor.id)) {
+      return;
+    }
+    
+    // Clear existing interval for this monitor (safety check)
     if (monitorIntervals.has(monitor.id)) {
       clearInterval(monitorIntervals.get(monitor.id));
     }
@@ -373,6 +378,17 @@ async function startMonitoringService() {
     }, intervalMs);
     
     monitorIntervals.set(monitor.id, intervalId);
+  }
+  
+  function rescheduleMonitor(monitor) {
+    // Clear existing interval
+    if (monitorIntervals.has(monitor.id)) {
+      clearInterval(monitorIntervals.get(monitor.id));
+      monitorIntervals.delete(monitor.id);
+    }
+    
+    // Schedule with new interval
+    scheduleMonitorCheck(monitor);
   }
   
   function refreshAllMonitors() {
@@ -483,16 +499,7 @@ function updateMonitor(id, monitor) {
           if (monitor.is_active !== 0) {
             db.get(`SELECT * FROM monitors WHERE id = ?`, [id], (err, updatedMonitor) => {
               if (!err && updatedMonitor) {
-                // Reschedule with new interval
-                if (monitorIntervals.has(id)) {
-                  clearInterval(monitorIntervals.get(id));
-                  monitorIntervals.delete(id);
-                }
-                const interval = updatedMonitor.interval || 60000;
-                const intervalId = setInterval(() => {
-                  checkMonitor(updatedMonitor).catch(console.error);
-                }, parseInt(interval));
-                monitorIntervals.set(id, intervalId);
+                rescheduleMonitor(updatedMonitor);
               }
             });
           } else {
