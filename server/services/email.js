@@ -394,19 +394,20 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             return;
           }
 
+          let totalChecks = 0;
           rows.forEach(row => {
             // Ensure hour is zero-padded (e.g., "00", "01", "23")
             const hour = String(row.hour).padStart(2, '0');
+            totalChecks += row.total_checks || 0;
             hourlyData[hour] = {
               uptime: row.total_checks > 0 ? (row.up_checks / row.total_checks) * 100 : 0,
               responseTime: row.avg_response_time ? parseFloat(row.avg_response_time) : 0
             };
           });
 
-          // Check if all response times are 0 (no actual data)
-          const hasData = Object.values(hourlyData).some(data => data.responseTime > 0 || data.uptime > 0);
-          if (!hasData) {
-            // No meaningful data - return null to indicate blank chart
+          // Check if there are any actual checks (even if response time is 0)
+          if (totalChecks === 0) {
+            // No checks performed - return null to indicate blank chart
             resolve(null);
             return;
           }
@@ -419,9 +420,10 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           for (let i = 0; i < 24; i++) {
             const hour = String(i).padStart(2, '0');
             hours.push(`${hour}:00`);
-            // Only show data if there are actual checks for that hour
+            // Show data if available, otherwise null (will create gap in chart)
             const hourData = hourlyData[hour];
-            responseTimeValues.push(hourData && hourData.responseTime > 0 ? hourData.responseTime : null);
+            // Use the response time if available (even if 0, as long as there was a check)
+            responseTimeValues.push(hourData ? hourData.responseTime : null);
           }
           
           // Add 24:00 at the end to show the full day
