@@ -211,7 +211,13 @@ function App() {
             >
               <Settings size={24} />
             </button>
-            <Wifi size={24} />
+            <button 
+              className="header-icon-btn" 
+              onClick={handleRunSpeedTest}
+              title="Run Speed Test"
+            >
+              <Wifi size={24} />
+            </button>
           </div>
         </div>
       </header>
