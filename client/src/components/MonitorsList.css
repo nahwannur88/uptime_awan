@@ -27,7 +27,23 @@
 
 @media (orientation: landscape) and (max-width: 768px) {
   .monitors-list-card {
-    min-height: 300px;
+    min-height: 250px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  
+  .monitors-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.375rem;
+  }
+  
+  .monitor-item {
+    min-height: 60px;
+  }
+  
+  .monitor-card-front,
+  .monitor-card-back {
+    min-height: 60px;
   }
 }
 

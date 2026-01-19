@@ -20,6 +20,18 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    max-height: none;
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 768px) {
+  .speed-test-card {
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
   }
 }
 
@@ -210,6 +222,25 @@
   flex: 1;
   min-height: 0;
   width: 100%;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    min-height: 300px;
+    height: 300px;
+    overflow: visible;
+  }
+  
+  .speed-chart {
+    overflow: visible;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 768px) {
+  .chart-container {
+    min-height: 200px;
+    height: 200px;
+  }
 }
 
 @media (max-width: 768px) {

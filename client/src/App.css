@@ -26,6 +26,30 @@
   .App {
     height: auto;
     min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  .app-main {
+    padding: 0.5rem;
+    overflow-y: visible;
+  }
+  
+  .dashboard-grid {
+    gap: 0.5rem;
+  }
+  
+  .app-header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .header-left h1 {
+    font-size: 0.9rem;
+  }
+  
+  .header-right svg {
+    width: 16px;
+    height: 16px;
   }
 }
 
