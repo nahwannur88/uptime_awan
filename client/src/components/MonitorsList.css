@@ -166,26 +166,61 @@
 }
 
 .monitor-item {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  min-height: 60px;
+  height: 100%;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.monitor-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 60px;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.monitor-item.flipped .monitor-card-inner {
+  transform: rotateY(180deg);
+}
+
+.monitor-card-front,
+.monitor-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  padding: 0.625rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  padding: 0.625rem 0.75rem;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  min-height: 60px;
+  justify-content: space-between;
   border-left: 3px solid;
 }
 
-.monitor-item.status-up {
-  border-left-color: #22c55e;
-  background: rgba(34, 197, 94, 0.05);
+.monitor-card-back {
+  transform: rotateY(180deg);
+  overflow-y: auto;
 }
 
-.monitor-item.status-down {
+.monitor-item.status-up .monitor-card-front,
+.monitor-item.status-up .monitor-card-back {
+  border-left-color: #22c55e;
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.monitor-item.status-down .monitor-card-front,
+.monitor-item.status-down .monitor-card-back {
   border-left-color: #ef4444;
-  background: rgba(239, 68, 68, 0.05);
+  background: rgba(15, 23, 42, 0.7);
   animation: blink-down 2s infinite;
 }
 
@@ -201,38 +236,118 @@
   }
 }
 
-.monitor-item.status-unknown {
+.monitor-item.status-unknown .monitor-card-front,
+.monitor-item.status-unknown .monitor-card-back {
   border-left-color: #94a3b8;
-  background: rgba(148, 163, 184, 0.05);
+  background: rgba(15, 23, 42, 0.6);
 }
 
-.monitor-item:hover {
+.monitor-item:hover .monitor-card-front,
+.monitor-item:hover .monitor-card-back {
   border-color: rgba(148, 163, 184, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.monitor-item.status-up:hover {
-  background: rgba(34, 197, 94, 0.08);
-}
-
-.monitor-item.status-down:hover {
-  animation: none;
-  background: rgba(239, 68, 68, 0.2);
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
-}
-
-.monitor-item.status-unknown:hover {
-  background: rgba(148, 163, 184, 0.08);
-}
-
-.monitor-check-times {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.flip-hint {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-align: center;
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid rgba(148, 163, 184, 0.1);
+  font-style: italic;
+}
+
+.monitor-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 0.875rem;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+.detail-value a {
+  color: #3b82f6;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.2s ease;
+}
+
+.detail-value a:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.monitor-status-badge {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.status-indicator {
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-indicator.up {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.status-indicator.down {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.status-indicator.unknown {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.monitor-actions-back {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  justify-content: center;
+}
+
+.monitor-actions-back .edit-btn,
+.monitor-actions-back .delete-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
   font-size: 0.75rem;
 }
 
