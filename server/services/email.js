@@ -388,9 +388,11 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           }
 
           rows.forEach(row => {
-            hourlyData[row.hour] = {
+            // Ensure hour is zero-padded (e.g., "00", "01", "23")
+            const hour = String(row.hour).padStart(2, '0');
+            hourlyData[hour] = {
               uptime: row.total_checks > 0 ? (row.up_checks / row.total_checks) * 100 : 0,
-              responseTime: row.avg_response_time || 0
+              responseTime: row.avg_response_time ? parseFloat(row.avg_response_time) : 0
             };
           });
 
