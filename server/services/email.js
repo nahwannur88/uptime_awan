@@ -144,6 +144,202 @@ function saveEmailSettings(settings) {
   });
 }
 
+// Generate speed test chart for a specific date
+async function generateSpeedTestChart(reportDate = null) {
+  return new Promise(async (resolve, reject) => {
+    if (!ChartJSNodeCanvas) {
+      reject(new Error('Chart generation not available - canvas module not installed'));
+      return;
+    }
+    try {
+      const db = getDatabase();
+      
+      // Get target date range
+      let targetDate;
+      if (reportDate) {
+        targetDate = new Date(reportDate + 'T00:00:00');
+      } else {
+        targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - 1);
+        targetDate.setHours(0, 0, 0, 0);
+      }
+      
+      const targetDateEnd = new Date(targetDate);
+      targetDateEnd.setHours(23, 59, 59, 999);
+      
+      // Get speed test data for the target date
+      db.all(
+        `SELECT 
+          strftime('%H', datetime(timestamp, 'localtime')) as hour,
+          AVG(download_speed) as avg_download,
+          AVG(upload_speed) as avg_upload,
+          AVG(ping) as avg_ping
+         FROM speedtest_results
+         WHERE timestamp >= ? AND timestamp <= ?
+         GROUP BY strftime('%H', datetime(timestamp, 'localtime'))
+         ORDER BY hour`,
+        [targetDate.toISOString(), targetDateEnd.toISOString()],
+        async (err, rows) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          // Create hourly data map
+          const hourlyData = {};
+          for (let i = 0; i < 24; i++) {
+            const hour = String(i).padStart(2, '0');
+            hourlyData[hour] = { download: 0, upload: 0, ping: 0 };
+          }
+
+          rows.forEach(row => {
+            hourlyData[row.hour] = {
+              download: row.avg_download || 0,
+              upload: row.avg_upload || 0,
+              ping: row.avg_ping || 0
+            };
+          });
+
+          // Prepare chart data - all 24 hours (00:00 to 23:00)
+          const hours = [];
+          const downloadValues = [];
+          const uploadValues = [];
+          
+          // Generate all 24 hours from 00:00 to 23:00
+          for (let i = 0; i < 24; i++) {
+            const hour = String(i).padStart(2, '0');
+            hours.push(`${hour}:00`);
+            downloadValues.push(hourlyData[hour].download || 0);
+            uploadValues.push(hourlyData[hour].upload || 0);
+          }
+          
+          // Add 24:00 at the end
+          hours.push('24:00');
+          downloadValues.push(downloadValues[23]);
+          uploadValues.push(uploadValues[23]);
+
+          // Create chart
+          const width = 800;
+          const height = 400;
+          const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height });
+
+          const configuration = {
+            type: 'line',
+            data: {
+              labels: hours,
+              datasets: [
+                {
+                  label: 'Download Speed (Mbps)',
+                  data: downloadValues,
+                  borderColor: 'rgb(59, 130, 246)',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  tension: 0.3,
+                  fill: true,
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                  pointBackgroundColor: 'rgb(59, 130, 246)',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2
+                },
+                {
+                  label: 'Upload Speed (Mbps)',
+                  data: uploadValues,
+                  borderColor: 'rgb(34, 197, 94)',
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  tension: 0.3,
+                  fill: true,
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                  pointBackgroundColor: 'rgb(34, 197, 94)',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                title: {
+                  display: true,
+                  text: 'Network Speed Test - 24 Hour Performance',
+                  font: { size: 18, weight: 'bold' },
+                  padding: { top: 10, bottom: 20 }
+                },
+                legend: {
+                  display: true,
+                  position: 'top',
+                  labels: {
+                    font: { size: 12 },
+                    padding: 15
+                  }
+                },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.dataset.label || '';
+                      const value = context.parsed.y.toFixed(2);
+                      return `${label}: ${value} Mbps`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Speed (Mbps)',
+                    font: { size: 14, weight: 'bold' },
+                    padding: { top: 10, bottom: 10 }
+                  },
+                  ticks: {
+                    font: { size: 11 },
+                    callback: function(value) {
+                      return value.toFixed(0) + ' Mbps';
+                    }
+                  },
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.1)',
+                    drawBorder: true
+                  }
+                },
+                x: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: 'Time (00:00 - 24:00)',
+                    font: { size: 14, weight: 'bold' },
+                    padding: { top: 10, bottom: 10 }
+                  },
+                  ticks: {
+                    font: { size: 11 },
+                    maxRotation: 45,
+                    minRotation: 45
+                  },
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.1)',
+                    drawBorder: true
+                  }
+                }
+              }
+            }
+          };
+
+          const imageBuffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+          resolve(imageBuffer);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 // Generate hourly uptime chart
 async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = null) {
   return new Promise(async (resolve, reject) => {
