@@ -146,11 +146,37 @@
   cursor: not-allowed;
 }
 
+.report-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.report-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+}
+
+.report-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .modal-actions {
   display: flex;
   gap: 1rem;
   margin-top: 2rem;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 768px) {

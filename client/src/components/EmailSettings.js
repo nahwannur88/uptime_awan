@@ -116,6 +116,26 @@ function EmailSettings({ onClose }) {
     }
   };
 
+  const handleSendReport = async () => {
+    try {
+      setSaving(true);
+      const response = await fetch('/api/email/report', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setTestResult({ success: true, message: 'Daily report sent successfully! Check your inbox.' });
+      } else {
+        setTestResult({ success: false, message: data.error || 'Failed to send report' });
+      }
+    } catch (error) {
+      setTestResult({ success: false, message: 'Error sending report: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleTestEmail = async () => {
     // Validate required fields for test email
     const testErrors = {};
@@ -393,10 +413,16 @@ function EmailSettings({ onClose }) {
               Cancel
             </button>
             {settings.enabled && (
-              <button type="button" className="test-btn" onClick={handleTestEmail} disabled={saving}>
-                <Send size={16} />
-                Send Test Email
-              </button>
+              <>
+                <button type="button" className="test-btn" onClick={handleTestEmail} disabled={saving}>
+                  <Send size={16} />
+                  Send Test Email
+                </button>
+                <button type="button" className="report-btn" onClick={handleSendReport} disabled={saving}>
+                  <Send size={16} />
+                  Send Report Now
+                </button>
+              </>
             )}
             <button type="submit" className="submit-btn" disabled={saving}>
               {saving ? 'Saving...' : 'Save Settings'}
