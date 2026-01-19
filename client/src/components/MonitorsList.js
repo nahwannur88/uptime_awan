@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './MonitorsList.css';
 import { Plus, Trash2, ExternalLink, Edit, Search, X } from 'lucide-react';
 
