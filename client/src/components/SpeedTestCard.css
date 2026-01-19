@@ -11,6 +11,16 @@
   max-height: calc(100vh - 300px);
   overflow: hidden;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .speed-test-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .speed-test-card::-webkit-scrollbar {
