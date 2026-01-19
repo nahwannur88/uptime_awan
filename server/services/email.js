@@ -398,9 +398,10 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           rows.forEach(row => {
             // Ensure hour is zero-padded (e.g., "00", "01", "23")
             const hour = String(row.hour).padStart(2, '0');
-            totalChecks += row.total_checks || 0;
+            const checks = parseInt(row.total_checks) || 0;
+            totalChecks += checks;
             hourlyData[hour] = {
-              uptime: row.total_checks > 0 ? (row.up_checks / row.total_checks) * 100 : 0,
+              uptime: checks > 0 ? (row.up_checks / checks) * 100 : 0,
               responseTime: row.avg_response_time ? parseFloat(row.avg_response_time) : 0
             };
           });
@@ -408,9 +409,12 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
           // Check if there are any actual checks (even if response time is 0)
           if (totalChecks === 0) {
             // No checks performed - return null to indicate blank chart
+            console.log(`No checks found for monitor ${monitorId} on ${reportDate || 'yesterday'}`);
             resolve(null);
             return;
           }
+
+          console.log(`Chart data for monitor ${monitorId}: ${totalChecks} total checks across ${rows.length} hours`);
 
           // Prepare chart data - only response time, all 24 hours (00:00 to 23:00)
           const hours = [];
