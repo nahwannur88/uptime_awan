@@ -428,8 +428,16 @@ async function generateHourlyUptimeChart(monitorId, monitorName, reportDate = nu
             const hourData = hourlyData[hour];
             // Use the response time if available (even if 0, as long as there was a check)
             // Check if this hour has data in the original rows
-            const hasDataForHour = rows.some(row => String(row.hour).padStart(2, '0') === hour);
-            responseTimeValues.push(hasDataForHour && hourData ? hourData.responseTime : null);
+            const hasDataForHour = rows.some(row => {
+              const rowHour = String(row.hour).padStart(2, '0');
+              return rowHour === hour;
+            });
+            // If we have data for this hour, use it (even if response time is 0)
+            if (hasDataForHour && hourData) {
+              responseTimeValues.push(hourData.responseTime);
+            } else {
+              responseTimeValues.push(null);
+            }
           }
           
           // Add 24:00 at the end to show the full day
@@ -820,9 +828,11 @@ async function generateDailyReport(reportDate = null) {
       return str;
     };
 
-    let csvContent = 'Monitor Name,URL,Type,Status,Uptime %,Avg Response (ms),Total Checks,Last Check,Next Check\n';
+    // CSV Header - Summary Section
+    let csvContent = '=== MONITOR SUMMARY ===\n';
+    csvContent += 'Monitor Name,URL,Type,Status,Uptime %,Avg Response (ms),Total Checks,Last Check,Next Check\n';
     
-    // Add monitor data to CSV
+    // Add monitor summary data to CSV
     for (const monitor of activeMonitors) {
       const monitorStats = await new Promise((resolve, reject) => {
         db.get(
@@ -848,6 +858,36 @@ async function generateDailyReport(reportDate = null) {
       const nextCheck = monitor.next_check ? new Date(monitor.next_check).toLocaleString() : 'N/A';
       
       csvContent += `${escapeCsv(monitor.name)},${escapeCsv(monitor.url)},${escapeCsv(monitor.type || 'HTTP')},${escapeCsv(monitor.current_status || 'unknown')},${escapeCsv(monitorUptime)},${escapeCsv(Math.round(monitorStats.avg_response_time || 0))},${escapeCsv(monitorStats.total || 0)},${escapeCsv(lastCheck)},${escapeCsv(nextCheck)}\n`;
+    }
+
+    // CSV - All Individual Check Records
+    csvContent += '\n=== ALL MONITOR CHECKS (DETAILED RECORDS) ===\n';
+    csvContent += 'Monitor Name,Timestamp,Status,Response Time (ms)\n';
+    
+    // Get all individual check records for the day
+    for (const monitor of activeMonitors) {
+      const allChecks = await new Promise((resolve, reject) => {
+        db.all(
+          `SELECT 
+            timestamp,
+            status,
+            response_time
+           FROM monitor_checks
+           WHERE monitor_id = ? AND timestamp >= ? AND timestamp <= ?
+           ORDER BY timestamp ASC`,
+          [monitor.id, targetDate.toISOString(), targetDateEnd.toISOString()],
+          (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows || []);
+          }
+        );
+      });
+
+      // Add each check record
+      allChecks.forEach(check => {
+        const timestamp = new Date(check.timestamp).toLocaleString();
+        csvContent += `${escapeCsv(monitor.name)},${escapeCsv(timestamp)},${escapeCsv(check.status)},${escapeCsv(check.response_time || 0)}\n`;
+      });
     }
 
     // Add speed test data to CSV if available
