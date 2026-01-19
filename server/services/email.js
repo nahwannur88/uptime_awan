@@ -645,16 +645,7 @@ async function generateDailyReport(reportDate = null) {
 
     // Add monitor details with charts
     for (const monitor of activeMonitors) {
-      let chartBase64 = null;
-      try {
-        const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name, reportDateStr);
-        chartBase64 = chartBuffer.toString('base64');
-      } catch (error) {
-        console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
-        // Continue without chart
-      }
-
-      // Get monitor-specific stats
+      // Get monitor-specific stats for the target date (same date range as chart)
       const monitorStats = await new Promise((resolve, reject) => {
         db.get(
           `SELECT 
@@ -672,6 +663,19 @@ async function generateDailyReport(reportDate = null) {
           }
         );
       });
+
+      // Generate chart only if there's data (uses same date range)
+      let chartBase64 = null;
+      try {
+        const chartBuffer = await generateHourlyUptimeChart(monitor.id, monitor.name, reportDateStr);
+        if (chartBuffer) {
+          chartBase64 = chartBuffer.toString('base64');
+        }
+        // If chartBuffer is null, chartBase64 stays null (no chart will be shown)
+      } catch (error) {
+        console.warn(`Could not generate chart for ${monitor.name}:`, error.message);
+        // Continue without chart
+      }
 
       const monitorUptime = monitorStats.total > 0
         ? ((monitorStats.up / monitorStats.total) * 100).toFixed(2)
