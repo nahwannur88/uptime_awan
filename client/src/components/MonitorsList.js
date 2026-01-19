@@ -4,6 +4,19 @@ import { Plus, Trash2, ExternalLink, Edit, Search, X } from 'lucide-react';
 
 function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [flippedMonitors, setFlippedMonitors] = useState(new Set());
+  
+  const toggleFlip = (monitorId) => {
+    setFlippedMonitors(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(monitorId)) {
+        newSet.delete(monitorId);
+      } else {
+        newSet.add(monitorId);
+      }
+      return newSet;
+    });
+  };
   
   const filteredMonitors = monitors
     .filter(monitor => {
@@ -88,59 +101,119 @@ function MonitorsList({ monitors, onAddMonitor, onDeleteMonitor, onEditMonitor }
           filteredMonitors.map((monitor) => {
             const statusClass = monitor.current_status === 'up' ? 'status-up' : 
                                monitor.current_status === 'down' ? 'status-down' : 'status-unknown';
+            const isFlipped = flippedMonitors.has(monitor.id);
             return (
-              <div key={monitor.id} className={`monitor-item ${statusClass}`}>
-                <div className="monitor-header">
-                  <div className="monitor-info">
-                    <div className="monitor-name-row">
-                      <div className="monitor-name">{monitor.name}</div>
-                      <div className="monitor-uptime">{formatUptime(monitor.uptime_percentage)}%</div>
+              <div 
+                key={monitor.id} 
+                className={`monitor-item ${statusClass} ${isFlipped ? 'flipped' : ''}`}
+                onClick={() => toggleFlip(monitor.id)}
+              >
+                <div className="monitor-card-inner">
+                  {/* Front side */}
+                  <div className="monitor-card-front">
+                    <div className="monitor-header">
+                      <div className="monitor-info">
+                        <div className="monitor-name-row">
+                          <div className="monitor-name">{monitor.name}</div>
+                          <div className="monitor-uptime">{formatUptime(monitor.uptime_percentage)}%</div>
+                        </div>
+                        <div className="monitor-status-badge">
+                          <span className={`status-indicator ${monitor.current_status || 'unknown'}`}>
+                            {monitor.current_status?.toUpperCase() || 'UNKNOWN'}
+                          </span>
+                          <span className="monitor-type-badge">{monitor.type?.toUpperCase() || 'HTTP'}</span>
+                        </div>
+                      </div>
+                      <div className="monitor-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="edit-btn" 
+                          onClick={() => onEditMonitor(monitor)}
+                          title="Edit monitor"
+                        >
+                          <Edit size={12} />
+                        </button>
+                        <button 
+                          className="delete-btn" 
+                          onClick={() => onDeleteMonitor(monitor.id)}
+                          title="Delete monitor"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="monitor-url">
-                      {monitor.type === 'ping' || monitor.type === 'tcp' ? (
-                        <span>{monitor.url}</span>
-                      ) : (
-                        <a href={monitor.url.startsWith('http') ? monitor.url : `http://${monitor.url}`} target="_blank" rel="noopener noreferrer">
-                          {monitor.url}
-                          <ExternalLink size={10} />
-                        </a>
-                      )}
-                      <span className="monitor-type-badge">{monitor.type?.toUpperCase() || 'HTTP'}</span>
-                    </div>
+                    <div className="flip-hint">Click to view details</div>
                   </div>
-                  <div className="monitor-actions">
-                    <button 
-                      className="edit-btn" 
-                      onClick={() => onEditMonitor(monitor)}
-                      title="Edit monitor"
-                    >
-                      <Edit size={12} />
-                    </button>
-                    <button 
-                      className="delete-btn" 
-                      onClick={() => onDeleteMonitor(monitor.id)}
-                      title="Delete monitor"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                  
+                  {/* Back side */}
+                  <div className="monitor-card-back">
+                    <div className="monitor-details">
+                      <div className="detail-section">
+                        <div className="detail-label">Monitor Name</div>
+                        <div className="detail-value">{monitor.name}</div>
+                      </div>
+                      <div className="detail-section">
+                        <div className="detail-label">URL / IP Address</div>
+                        <div className="detail-value">
+                          {monitor.type === 'ping' || monitor.type === 'tcp' ? (
+                            <span>{monitor.url}</span>
+                          ) : (
+                            <a href={monitor.url.startsWith('http') ? monitor.url : `http://${monitor.url}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                              {monitor.url}
+                              <ExternalLink size={12} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="detail-section">
+                        <div className="detail-label">Type</div>
+                        <div className="detail-value">{monitor.type?.toUpperCase() || 'HTTP'}</div>
+                      </div>
+                      <div className="detail-section">
+                        <div className="detail-label">Status</div>
+                        <div className="detail-value">
+                          <span className={`status-indicator ${monitor.current_status || 'unknown'}`}>
+                            {monitor.current_status?.toUpperCase() || 'UNKNOWN'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="detail-section">
+                        <div className="detail-label">Uptime</div>
+                        <div className="detail-value">{formatUptime(monitor.uptime_percentage)}%</div>
+                      </div>
+                      {monitor.last_check && (
+                        <div className="detail-section">
+                          <div className="detail-label">Last Check</div>
+                          <div className="detail-value">{new Date(monitor.last_check).toLocaleString()}</div>
+                        </div>
+                      )}
+                      {monitor.next_check && (
+                        <div className="detail-section">
+                          <div className="detail-label">Next Check</div>
+                          <div className="detail-value">{new Date(monitor.next_check).toLocaleString()}</div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="monitor-actions-back" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className="edit-btn" 
+                        onClick={() => onEditMonitor(monitor)}
+                        title="Edit monitor"
+                      >
+                        <Edit size={12} />
+                        Edit
+                      </button>
+                      <button 
+                        className="delete-btn" 
+                        onClick={() => onDeleteMonitor(monitor.id)}
+                        title="Delete monitor"
+                      >
+                        <Trash2 size={12} />
+                        Delete
+                      </button>
+                    </div>
+                    <div className="flip-hint">Click to flip back</div>
                   </div>
                 </div>
-                {(monitor.last_check || monitor.next_check) && (
-                  <div className="monitor-check-times">
-                    {monitor.last_check && (
-                      <div className="check-time-item">
-                        <span className="check-time-label">Last:</span>
-                        <span className="check-time-value">{new Date(monitor.last_check).toLocaleString()}</span>
-                      </div>
-                    )}
-                    {monitor.next_check && (
-                      <div className="check-time-item">
-                        <span className="check-time-label">Next:</span>
-                        <span className="check-time-value">{new Date(monitor.next_check).toLocaleString()}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })
