@@ -59,6 +59,7 @@ async function runSpeedTest() {
 
 let speedtestIntervalId = null;
 let speedtestSettings = null;
+let scheduledSpeedtestInterval = null; // Track the scheduled interval value
 
 async function getSpeedtestSettings() {
   return new Promise((resolve, reject) => {
@@ -87,9 +88,20 @@ function startSpeedTestScheduler() {
       const settings = await getSpeedtestSettings();
       speedtestSettings = settings;
       
-      // Clear existing interval
+      const interval = settings.interval || 3600000; // Default: 1 hour
+      const intervalMs = parseInt(interval);
+      
+      // Check if already scheduled with the same interval
+      if (speedtestIntervalId && scheduledSpeedtestInterval === intervalMs) {
+        // Already scheduled with correct interval, skip rescheduling
+        return;
+      }
+      
+      // Clear existing interval if it exists
       if (speedtestIntervalId) {
         clearInterval(speedtestIntervalId);
+        speedtestIntervalId = null;
+        scheduledSpeedtestInterval = null;
       }
       
       // If disabled, don't schedule
@@ -98,34 +110,40 @@ function startSpeedTestScheduler() {
         return;
       }
       
-      const interval = settings.interval || 3600000; // Default: 1 hour
-      const intervalMinutes = Math.floor(interval / 60000);
+      const intervalMinutes = Math.floor(intervalMs / 60000);
       
-      // Run immediately on startup (if enabled)
-      setTimeout(() => {
-        runSpeedTest().catch(console.error);
-      }, 5000);
+      // Run immediately on startup (only if not already scheduled)
+      if (!speedtestIntervalId) {
+        setTimeout(() => {
+          runSpeedTest().catch(console.error);
+        }, 5000);
+      }
       
       // Schedule regular tests
       speedtestIntervalId = setInterval(() => {
         runSpeedTest().catch(console.error);
-      }, interval);
+      }, intervalMs);
       
-      console.log(`Speed test scheduler started (runs every ${intervalMinutes} minutes)`);
+      scheduledSpeedtestInterval = intervalMs;
+      console.log(`Speed test scheduler started (runs every ${intervalMinutes} minutes / ${intervalMs}ms)`);
     } catch (error) {
       console.error('Error starting speed test scheduler:', error);
       // Fallback to default
       const defaultInterval = parseInt(process.env.SPEEDTEST_INTERVAL) || 3600000;
+      if (speedtestIntervalId) {
+        clearInterval(speedtestIntervalId);
+      }
       speedtestIntervalId = setInterval(() => {
         runSpeedTest().catch(console.error);
       }, defaultInterval);
+      scheduledSpeedtestInterval = defaultInterval;
       console.log('Speed test scheduler started with default interval');
     }
   }
   
   scheduleSpeedTest();
   
-  // Re-check settings every 5 minutes to allow dynamic updates
+  // Re-check settings every 5 minutes to allow dynamic updates (only reschedules if interval changed)
   setInterval(() => {
     scheduleSpeedTest();
   }, 300000); // 5 minutes

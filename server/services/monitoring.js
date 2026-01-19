@@ -449,15 +449,17 @@ function getMonitors() {
   return new Promise((resolve, reject) => {
     const db = getDatabase();
     db.all(
-      `SELECT m.*, ms.current_status, ms.last_check, ms.uptime_percentage,
-              datetime(ms.last_check, '+' || (m.interval / 1000) || ' seconds') as next_check
+      `SELECT m.*, ms.current_status, 
+              datetime(ms.last_check, 'localtime') as last_check, 
+              ms.uptime_percentage,
+              datetime(datetime(ms.last_check, 'localtime'), '+' || (m.interval / 1000) || ' seconds') as next_check
        FROM monitors m
        LEFT JOIN monitor_status ms ON m.id = ms.monitor_id
        ORDER BY m.created_at DESC`,
       (err, rows) => {
         if (err) reject(err);
         else {
-          // Format the timestamps
+          // Format the timestamps - convert to ISO string for frontend
           const formattedRows = rows.map(row => ({
             ...row,
             last_check: row.last_check ? new Date(row.last_check).toISOString() : null,
