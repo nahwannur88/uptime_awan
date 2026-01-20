@@ -819,7 +819,7 @@ async function generateDailyReport(reportDate = null) {
       </html>
     `;
 
-    // Generate CSV data for attachment
+    // Generate CSV data for attachments
     const escapeCsv = (value) => {
       if (value === null || value === undefined) return '';
       const str = String(value);
@@ -829,11 +829,17 @@ async function generateDailyReport(reportDate = null) {
       return str;
     };
 
-    // CSV Header - Summary Section
-    let csvContent = '=== MONITOR SUMMARY ===\n';
-    csvContent += 'Monitor Name,URL,Type,Status,Uptime %,Avg Response (ms),Total Checks,Last Check,Next Check\n';
-    
-    // Add monitor summary data to CSV
+    const makeFilenameSafe = (name) => {
+      return (name || 'monitor')
+        .toString()
+        .replace(/[^a-zA-Z0-9-_]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .substring(0, 40) || 'monitor';
+    };
+
+    // Build per-monitor CSV attachments
+    const attachments = [];
+
     for (const monitor of activeMonitors) {
       const monitorStats = await new Promise((resolve, reject) => {
         db.get(
@@ -858,15 +864,15 @@ async function generateDailyReport(reportDate = null) {
       const lastCheck = monitor.last_check ? new Date(monitor.last_check).toLocaleString() : 'N/A';
       const nextCheck = monitor.next_check ? new Date(monitor.next_check).toLocaleString() : 'N/A';
       
-      csvContent += `${escapeCsv(monitor.name)},${escapeCsv(monitor.url)},${escapeCsv(monitor.type || 'HTTP')},${escapeCsv(monitor.current_status || 'unknown')},${escapeCsv(monitorUptime)},${escapeCsv(Math.round(monitorStats.avg_response_time || 0))},${escapeCsv(monitorStats.total || 0)},${escapeCsv(lastCheck)},${escapeCsv(nextCheck)}\n`;
-    }
+      // Start CSV content for this monitor
+      let monitorCsv = '=== MONITOR SUMMARY ===\n';
+      monitorCsv += 'Monitor Name,URL,Type,Status,Uptime %,Avg Response (ms),Total Checks,Last Check,Next Check\n';
+      monitorCsv += `${escapeCsv(monitor.name)},${escapeCsv(monitor.url)},${escapeCsv(monitor.type || 'HTTP')},${escapeCsv(monitor.current_status || 'unknown')},${escapeCsv(monitorUptime)},${escapeCsv(Math.round(monitorStats.avg_response_time || 0))},${escapeCsv(monitorStats.total || 0)},${escapeCsv(lastCheck)},${escapeCsv(nextCheck)}\n`;
 
-    // CSV - All Individual Check Records
-    csvContent += '\n=== ALL MONITOR CHECKS (DETAILED RECORDS) ===\n';
-    csvContent += 'Monitor Name,Timestamp,Status,Response Time (ms)\n';
-    
-    // Get all individual check records for the day
-    for (const monitor of activeMonitors) {
+      // Detailed records for this monitor
+      monitorCsv += '\n=== MONITOR CHECKS (DETAILED RECORDS) ===\n';
+      monitorCsv += 'Timestamp,Status,Response Time (ms)\n';
+
       const allChecks = await new Promise((resolve, reject) => {
         db.all(
           `SELECT 
@@ -887,17 +893,30 @@ async function generateDailyReport(reportDate = null) {
       // Add each check record
       allChecks.forEach(check => {
         const timestamp = new Date(check.timestamp).toLocaleString();
-        csvContent += `${escapeCsv(monitor.name)},${escapeCsv(timestamp)},${escapeCsv(check.status)},${escapeCsv(check.response_time || 0)}\n`;
+        monitorCsv += `${escapeCsv(timestamp)},${escapeCsv(check.status)},${escapeCsv(check.response_time || 0)}\n`;
+      });
+
+      attachments.push({
+        filename: `monitor_${makeFilenameSafe(monitor.name)}_${reportDateStr}.csv`,
+        content: monitorCsv,
+        contentType: 'text/csv'
       });
     }
 
-    // Add speed test data to CSV if available
+    // Separate CSV for speed test data if available
+    let speedtestCsv = '';
     if (speedTestsForDate && speedTestsForDate.length > 0) {
-      csvContent += '\nSpeed Test Data\n';
-      csvContent += 'Timestamp,Download (Mbps),Upload (Mbps),Ping (ms),Jitter (ms),Server,ISP\n';
+      speedtestCsv += 'Speed Test Data\n';
+      speedtestCsv += 'Timestamp,Download (Mbps),Upload (Mbps),Ping (ms),Jitter (ms),Server,ISP\n';
       speedTestsForDate.forEach(test => {
         const timestamp = new Date(test.timestamp).toLocaleString();
-        csvContent += `${escapeCsv(timestamp)},${escapeCsv(test.download_speed.toFixed(2))},${escapeCsv(test.upload_speed.toFixed(2))},${escapeCsv(test.ping.toFixed(2))},${escapeCsv(test.jitter || 0)},${escapeCsv(test.server_name || 'N/A')},${escapeCsv(test.isp || 'N/A')}\n`;
+        speedtestCsv += `${escapeCsv(timestamp)},${escapeCsv(test.download_speed.toFixed(2))},${escapeCsv(test.upload_speed.toFixed(2))},${escapeCsv(test.ping.toFixed(2))},${escapeCsv(test.jitter || 0)},${escapeCsv(test.server_name || 'N/A')},${escapeCsv(test.isp || 'N/A')}\n`;
+      });
+
+      attachments.push({
+        filename: `speedtest_${reportDateStr}.csv`,
+        content: speedtestCsv,
+        contentType: 'text/csv'
       });
     }
 
@@ -907,13 +926,7 @@ async function generateDailyReport(reportDate = null) {
       to: emailSettings.recipient_email,
       subject: `Daily Uptime Report - ${reportDateStr}`,
       html: htmlReport,
-      attachments: [
-        {
-          filename: `uptime_report_${reportDateStr}.csv`,
-          content: csvContent,
-          contentType: 'text/csv'
-        }
-      ]
+      attachments
     };
 
     // Update status to sending
